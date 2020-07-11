@@ -4,6 +4,7 @@
 // Fix double damge when shooting adjacant
 // Fix incositant spawning of t side players
 // Fix getting stuck after bomb has been planted
+// Throw error for missing m
 // Fix diffusing
 // Fix deuque
 // Fix enquenext
@@ -15,147 +16,12 @@
 #include <ncurses.h>    //I/O to terminal
 #include <vector>       //vector
 #include <cstdlib>      //rand
+#include "collison.h"
+#include "entities.h"
 
 // *****************************
 // Main Code
 // *****************************
-
-class collison {
-public:
-    enum Collison {
-        No_Collision, Player_Pass_Through, Bullet_Pass_Through,    
-        Player_Collison, Bullet_Collison, Object_Collison, Solid_Collision
-    }; 
-    int collide(int colT) {
-        if ( colType == No_Collision ) 
-            return No_Collision;
-
-        else if ( colType == Player_Pass_Through ) {
-            if ( colT == No_Collision )
-                return No_Collision;
-                else if ( colT == Player_Pass_Through )
-                    return Solid_Collision;
-                else if ( colT == Bullet_Pass_Through )
-                    return Solid_Collision;
-                else if ( colT == Solid_Collision )
-                    return Solid_Collision;
-                else if ( colT == Player_Collison )
-                    return Player_Pass_Through;
-                else if ( colT == Bullet_Collison )
-                    return Player_Pass_Through;
-                else if ( colT == Object_Collison )
-                    return Player_Pass_Through;
-
-        } else if ( colType == Bullet_Pass_Through ) {
-            if ( colT == No_Collision )
-                return No_Collision;
-                else if ( colT == Player_Pass_Through )
-                    return Solid_Collision;
-                else if ( colT == Bullet_Pass_Through )
-                    return Solid_Collision;
-                else if ( colT == Solid_Collision )
-                    return Solid_Collision;
-                else if ( colT == Player_Collison )
-                    return Player_Collison;
-                else if ( colT == Bullet_Collison )
-                    return Bullet_Pass_Through;
-                else if ( colT == Object_Collison )
-                    return Bullet_Pass_Through;
-
-        } else if ( colType == Solid_Collision ) {
-            if ( colT == No_Collision )
-                return No_Collision;
-            else
-                return Solid_Collision;
-
-
-        } else if ( colType == Player_Collison ) {
-            if ( colT == No_Collision )
-                return No_Collision;
-                else if ( colT == Player_Pass_Through )
-                    return Player_Pass_Through;
-                else if ( colT == Bullet_Pass_Through )
-                    return Player_Collison;
-                else if ( colT == Solid_Collision )
-                    return Solid_Collision;
-                else if ( colT == Player_Collison )
-                    return Player_Collison;
-                else if ( colT == Bullet_Collison )
-                    return Bullet_Collison;
-                else if ( colT == Object_Collison )
-                    return Object_Collison;
-
-        } else if ( colType == Bullet_Collison ) {
-            if ( colT == No_Collision )
-                return No_Collision;
-                else if ( colT == Player_Pass_Through )
-                    return Player_Pass_Through;
-                else if ( colT == Bullet_Pass_Through )
-                    return Bullet_Pass_Through;
-                else if ( colT == Solid_Collision )
-                    return Solid_Collision;
-                else if ( colT == Player_Collison )
-                    return Player_Collison;
-                else if ( colT == Bullet_Collison )
-                    return No_Collision;
-                else if ( colT == Object_Collison )
-                    return No_Collision;
-
-        } else if ( colType == Object_Collison ) {
-            if ( colT == No_Collision )
-                return No_Collision;
-                else if ( colT == Player_Pass_Through )
-                    return Solid_Collision;
-                else if ( colT == Bullet_Pass_Through )
-                    return Solid_Collision;
-                else if ( colT == Solid_Collision )
-                    return Solid_Collision;
-                else if ( colT == Player_Collison )
-                    return Player_Collison;
-                else if ( colT == Bullet_Collison )
-                    return Bullet_Pass_Through;
-                else if ( colT == Object_Collison )
-                    return Object_Collison;
-        } 
-    }
-    int colType{ No_Collision };
-};
-
-class world;
-struct cell;
-class entity_t : public collison {
-public:
-    enum Direction {
-        Up, Right, Down, Left
-    };
-    char model() const { return m_model; }
-    enum ObjectType { 
-        Player, Object, Bullet, Invalid
-    };
-    entity_t() : ID(entCnt++) {}
-    entity_t(const entity_t& objB) : ID(entCnt++) {
-        colType = objB.colType;
-        curPos = objB.curPos;
-        m_model = objB.model();
-        lastDir = objB.lastDir;
-        m_speed = objB.speed();
-    }
-    int speed() const { return m_speed; }
-    virtual int whatAmI() const { return m_type; }
-
-    cell* curPos{ NULL };
-    int lastDir{ Up };
-    int ID{ -1 };
-    int dirEntered{ -1 };
-protected:
-    char m_model{ ' ' };
-    int m_type{ Invalid };
-    int m_speed{ 0 };
-private:
-    friend world;
-    static int entCnt;
-};
-int entity_t::entCnt = 0;
 
 class charMap;
 struct cell : public collison {
@@ -223,165 +89,6 @@ private:
     int cellCnt{ 0 };
 };
 
-
-class bullet : public entity_t {
-public:
-    bullet (entity_t e) {
-        m_type = e.whatAmI();
-        colType = e.colType;
-        m_model = e.model();
-        curPos = e.curPos;
-        lastDir = e.lastDir;
-        m_speed = e.speed();
-        dirEntered = e.dirEntered;
-    }
-    bullet(int d, cell* pos, int dirEntered) {
-        m_type = Bullet;
-        colType = Bullet_Collison;
-        lastDir = d;
-        m_model = '.';
-        curPos = pos;
-        m_speed = 3;
-        this->dirEntered = dirEntered;
-    }
-    int damage() const { return m_damage; }
-private:
-    int m_damage{ 25 };
-};
-
-class bomb : public entity_t {
-public:
-    bomb() {
-        m_type = Object;
-        colType = Object_Collison;
-        m_model = 'B';
-        m_speed = 0;
-    }
-    bomb(bool p) : m_planted(p) {
-        m_type = Object;
-        colType = Object_Collison;
-        m_model = 'B';
-        m_speed = 0;
-    }
-    int countdown(bool ticking) {
-        if (m_planted == true) {
-            if (ticking == true && m_time > 0){
-                m_time--;
-                printw("TICK: %d", m_time);
-            }
-            else if (m_time == 0)
-                m_explode = true;
-            return m_time;
-        }
-        return -1;
-    }
-    int diffuse(bool ticking) {
-        if(m_planted == true) { 
-            if(ticking == true && m_time > 0 && m_timeDiffuse > 0){
-                m_timeDiffuse--;
-
-            }
-            else if (m_timeDiffuse == 0)
-                m_diffused = true;
-            else
-                m_timeDiffuse = DIFFUSE_TIME;
-        }
-    }
-    bool isPlanted() const { return m_planted; }
-    bool isDiffused() const { return m_diffused; }
-private:
-    bool m_planted{ false };
-    bool m_diffused{ false };
-    bool m_explode{ false };
-    int m_time{ 10 }; //in ticks
-    int m_timeDiffuse { DIFFUSE_TIME };
-    const int DIFFUSE_TIME = 5;
-};
-
-class player : public entity_t {
-public:
-    player() {
-        m_type = Player;
-        colType = Player_Collison;
-        m_model = '@';
-        m_speed = 1;
-    }
-    player(const player& ent){
-        m_type = ent.whatAmI();
-        colType = ent.colType;
-        m_model = ent.model();
-        curPos = ent.curPos;
-        lastDir = ent.lastDir;
-        m_speed = ent.speed();
-        dirEntered = ent.dirEntered;
-        m_health = ent.health();
-        m_alive = ent.isAlive();
-    }
-    player(cell* pos) { 
-        m_type = Player;
-        colType = Player_Collison;
-        m_model = '@';
-        curPos = pos;
-        m_speed = 1;
-    }
-    bullet* shoot(int dir = -1) {
-        if (dir == -1)
-            dir = lastDir;
-        return new bullet(dir, curPos, dirEntered);
-    }
-    bool plantBomb(){
-        if (hasBomb == true){
-            m_priorStatus = curStatus;
-            curStatus = Planting;
-            hasBomb = false;
-            printw("Planting");
-            return true;
-        }
-        return false;
-    }
-    void takeDamage(int amount){
-        if (amount < 0) // No negative damage
-            amount *= -1;
-        if (amount > m_health) // No negaative health
-            m_health = 0;
-        else
-            m_health -= amount;
-        if (m_health == 0)
-            death();
-    }
-    void death(){
-        m_alive = false;
-        m_model = 'q';
-        m_speed = 0;
-        colType = No_Collision;
-    }
-    enum Status{
-        Do_Nothing, Get_Bomb, Planting, Diffusing
-    };
-    int thinkAi() const { return m_priorStatus; }
-    int thinkAi(int newStatus) {
-        curStatus = newStatus;
-        m_priorStatus = newStatus;
-        switch(curStatus) {
-            case Do_Nothing:
-                return Do_Nothing;
-            case Get_Bomb:
-                return Get_Bomb;
-        }
-    }
-    bool isAlive() const { return m_alive; }
-    int health() const { return m_health; }
-    int priorStatus() const { return m_priorStatus; }
-    int curStatus{ Do_Nothing };
-    bool hasBomb { false };
-private:
-    bool m_alive{ true };
-    int m_diffuseTime{ 5 };
-    int m_health{ 100 };
-    int m_priorStatus{ Do_Nothing };
-};
-
-
 class world {
 public:
     enum Direction {
@@ -429,9 +136,9 @@ public:
         }
         e->curPos->ent = e;
     }
-    void entityCntReset() {
+/*    void entityCntReset() {
         entity_t::entCnt = 0;
-    }
+    }*/
     bool swap(int* a, int* b){
         int temp;
         temp = *a;

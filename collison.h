@@ -1,5 +1,5 @@
-#ifndef COLLISON_CLASS
-#define COLLISON_CLASS
+#ifndef COLLISON_H
+#define COLLISON_H
 #include <stdlib.h>
 
 class collison {
