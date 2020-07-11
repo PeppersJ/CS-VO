@@ -1,3 +1,4 @@
+// Finish working on path queue
 // Fix running out of memory space (Crashes on 52 entitiy)
 // Add corpses
 // SegFalt on shooting w/o moving
@@ -8,6 +9,7 @@
 // Fix diffusing
 // Fix deuque
 // Fix enquenext
+// Make node subscript operator a const function
 
 //CS:VO created by Rishawn Peppers Johnson
 //Complie as: g++ assign12.cpp -std==c++17 -lncurses
@@ -16,6 +18,7 @@
 #include <ncurses.h>    //I/O to terminal
 #include <vector>       //vector
 #include <cstdlib>      //rand
+#include "queue.h"
 #include "collison.h"
 #include "entities.h"
 
@@ -169,7 +172,7 @@ public:
         std::vector<int> map(bound, std::numeric_limits<int>::max());  // Every cell on map
         std::vector<int> traverse(bound, false);
         std::vector<bool> shortest(bound, false);
-        std::vector<int> parent(bound, -1);
+        queue parent(bound);
         std::vector<char> dir(bound, 'n');
 
         for(int i = 0; i < worldMap->height(); i++) {
@@ -210,7 +213,8 @@ public:
                         if( traverse[j] == collison::Player_Pass_Through ) {
                             dir[j] = dir_temp;
                             map[j] = map[ndx] + 1;
-                            parent[j] = ndx;
+                        parent.enqueue(new node(ndx, 1));
+                            //parent[j].data = ndx;
                             if (enterDir == 'n')
                                 enterDir = dir_temp;
                         }
@@ -219,7 +223,8 @@ public:
                                 if (dir_temp == 'w' || dir_temp == 's'){
                                     dir[j] = dir_temp;
                                     map[j] = map[ndx] + 1;
-                                    parent[j] = ndx;
+                            parent.enqueue(new node(ndx, 1));
+                                    //parent[j].data = ndx;
                                     enterDir = 'n';
                                 }
                             }
@@ -227,14 +232,16 @@ public:
                                 if (dir_temp == 'a' || dir_temp == 'd'){
                                     dir[j] = dir_temp;
                                     map[j] = map[ndx] + 1;
-                                    parent[j] = ndx;
+                            parent.enqueue(new node(ndx, 1));
+                                    //parent[j].data = ndx;
                                     enterDir = 'n';
                                 }
                             }
                             else {
                                     dir[j] = dir_temp;
                                     map[j] = map[ndx] + 1;
-                                    parent[j] = ndx;
+                            parent.enqueue(new node(ndx, 1));
+                                    //parent[j].data = ndx;
                             }
                         }
                     }
@@ -246,7 +253,13 @@ public:
         }
 
         int cur = dest;
-        while(parent[cur] != -1) {
+        while(parent[cur].data != -1){
+            printw("%d[%c]->", cur, dir[cur]);
+            cur = parent[cur].data;
+        }
+
+/*        int cur = dest;
+        while(parent[cur].data != -1) {
         //   printw("%d[%c]->", cur, dir[cur]);
             for(int i = 0; i < worldMap->height(); i++) {
                 for (int j = 0; j < worldMap->width(); j++) {
@@ -263,8 +276,8 @@ public:
                   //      (*worldMap)[i][j].obj = '+';
                 }
             }
-            cur = parent[cur];
-        }
+            cur = parent[cur].data;
+        }*/
     }
     void victory(bool tSideWin) {
  //       win = true;

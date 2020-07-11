@@ -1,6 +1,7 @@
 #ifndef ENTITES_H
 #define ENTITES_H
 #include "collison.h"
+#include "queue.h"
 
 class world;
 struct cell;
@@ -22,6 +23,7 @@ public:
     int lastDir{ Up };
     int ID{ -1 };
     int dirEntered{ -1 };
+    queue* path{ NULL }; 
 protected:
     char m_model{ ' ' };
     int m_type{ Invalid };
@@ -70,6 +72,7 @@ public:
     bool plantBomb();
     void takeDamage(int amount);
     void death();
+    int move();
     int thinkAi() const;
     int thinkAi(int newStatus);
     bool isAlive() const;

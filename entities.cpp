@@ -10,6 +10,7 @@ entity_t::entity_t(const entity_t& objB) : ID(entCnt++) {
     m_model = objB.model();
     lastDir = objB.lastDir;
     m_speed = objB.speed();
+    path = objB.path;
 }
 char entity_t::model() const { return m_model; }
 int entity_t::speed() const { return m_speed; }
@@ -68,6 +69,7 @@ bullet::bullet (entity_t e) {
     lastDir = e.lastDir;
     m_speed = e.speed();
     dirEntered = e.dirEntered;
+    path = e.path;
 }
 bullet::bullet(int d, cell* pos, int dirEntered) {
     m_type = Bullet;
@@ -99,6 +101,7 @@ player::player(const player& ent){
     dirEntered = ent.dirEntered;
     m_health = ent.health();
     m_alive = ent.isAlive();
+    path = ent.path;
 }
 player::player(cell* pos) { 
     m_type = Player;
@@ -112,7 +115,7 @@ bullet* player::shoot(int dir) {
         dir = lastDir;
     return new bullet(dir, curPos, dirEntered);
 }
-void player::takeDamage(int amount){
+void player::takeDamage(int amount) {
     if (amount < 0) // No negative damage
         amount *= -1;
     if (amount > m_health) // No negaative health
@@ -122,11 +125,14 @@ void player::takeDamage(int amount){
     if (m_health == 0)
         death();
 }
-void player::death(){
+void player::death() {
     m_alive = false;
     m_model = 'q';
     m_speed = 0;
     colType = No_Collision;
+}
+int player::move() {
+
 }
 int player::thinkAi() const { return m_priorStatus; }
 int player::thinkAi(int newStatus) {
