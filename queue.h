@@ -16,18 +16,19 @@ public:
     queue(int s);
     ~queue();
     const node& operator [](int i) const;
-    node* dequeue();
-    node* enqueue(node*);
+    int dequeue();
+    void enqueue(int);
     bool isempty();
     bool isfull();
     void update(node** a, int arrSize, int curIndex);
-//    int size() const;
+    int size() const;
     node** arr{ NULL };
 private:
     bool swap(node* a, node* b);
-    int m_front{ 0 };
-    int m_rear{ 0 };
+    int m_front;
+    int m_rear;
     int m_MAXSIZE{ 0 };
     int m_curIndex{ 0 };
+    int m_size{ 0 };
 };
 #endif

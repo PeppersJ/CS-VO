@@ -165,15 +165,16 @@ public:
 
         return 'n';
     }
-    void pathFinding(cell* s, cell* d) {
+    queue& pathFinding(cell* s, cell* d) {
         int source = s->pathID;
         int dest = d->pathID;
         int bound = worldMap->width() * worldMap->height();
         std::vector<int> map(bound, std::numeric_limits<int>::max());  // Every cell on map
         std::vector<int> traverse(bound, false);
         std::vector<bool> shortest(bound, false);
-        queue parent(bound);
+        std::vector<int> parent(bound, -1);
         std::vector<char> dir(bound, 'n');
+        queue* path = new queue(bound);
 
         for(int i = 0; i < worldMap->height(); i++) {
             for (int j = 0; j < worldMap->width(); j++) {
@@ -213,8 +214,7 @@ public:
                         if( traverse[j] == collison::Player_Pass_Through ) {
                             dir[j] = dir_temp;
                             map[j] = map[ndx] + 1;
-                        parent.enqueue(new node(ndx, 1));
-                            //parent[j].data = ndx;
+                            parent[j] = ndx;
                             if (enterDir == 'n')
                                 enterDir = dir_temp;
                         }
@@ -223,8 +223,7 @@ public:
                                 if (dir_temp == 'w' || dir_temp == 's'){
                                     dir[j] = dir_temp;
                                     map[j] = map[ndx] + 1;
-                            parent.enqueue(new node(ndx, 1));
-                                    //parent[j].data = ndx;
+                                    parent[j] = ndx;
                                     enterDir = 'n';
                                 }
                             }
@@ -232,33 +231,35 @@ public:
                                 if (dir_temp == 'a' || dir_temp == 'd'){
                                     dir[j] = dir_temp;
                                     map[j] = map[ndx] + 1;
-                            parent.enqueue(new node(ndx, 1));
-                                    //parent[j].data = ndx;
+                                    parent[j] = ndx;
                                     enterDir = 'n';
                                 }
                             }
                             else {
                                     dir[j] = dir_temp;
                                     map[j] = map[ndx] + 1;
-                            parent.enqueue(new node(ndx, 1));
-                                    //parent[j].data = ndx;
+                                    parent[j] = ndx;
                             }
                         }
                     }
                 }
             }
+
             count = i;
             if (ndx == d->pathID)
                 break;
         }
 
         int cur = dest;
-        while(parent[cur].data != -1){
-            printw("%d[%c]->", cur, dir[cur]);
-            cur = parent[cur].data;
+        path->enqueue(dest);
+        while(parent[cur] != -1){
+            //printw("%d[%c]->", cur, dir[cur]);
+            path->enqueue(cur);
+            cur = parent[cur];
         }
 
-/*        int cur = dest;
+        return *path;
+/*     int cur = dest;
         while(parent[cur].data != -1) {
         //   printw("%d[%c]->", cur, dir[cur]);
             for(int i = 0; i < worldMap->height(); i++) {

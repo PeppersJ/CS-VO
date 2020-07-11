@@ -5,7 +5,7 @@ node::node(int d, int p) : data(d), priority(p){}
 
 queue::queue() { /*Empty*/ }
 queue::queue(int size) : m_MAXSIZE(size) {
-    m_front = m_rear = 0;
+    m_front = m_rear = -1;
     arr = new node*[m_MAXSIZE];
     for(int i = 0; i < m_MAXSIZE; i++)
     arr[i] = new node;
@@ -24,9 +24,9 @@ bool queue::isfull() {
     return false;
 }
 bool queue::isempty() { return (m_front == -1) ? true : false; }
-node* queue::dequeue() {
+int queue::dequeue() {
     if (isempty())
-        return arr[0];
+        return -1;
 
     node* temp = arr[m_front];  // preserve
     arr[m_front]->data = -1;    // reset
@@ -37,24 +37,41 @@ node* queue::dequeue() {
         m_front = 0;
     else
         m_front++;
+    m_size--;
 
-    return arr[m_front];
+    return arr[m_front]->data;
 }
-node* queue::enqueue(node* newNode) {
+void queue::enqueue(int newData) {
+    if (isfull()) // Do nothing
+        return;
+    else if (m_front == -1) { // First element only
+        m_front = m_rear = 0;
+        arr[m_rear]->data = newData;
+    }
+    else if (m_rear == m_MAXSIZE - 1) { //Reset rear
+        m_rear = 0;
+        arr[m_rear]->data = newData;
+    } else {
+        m_rear++;
+        arr[m_rear]->data = newData;
+    }
+    m_size++;
+}
+/*node* queue::enqueue(node* newNode) {
     if (isfull()) 
         return arr[0];
     else if (m_front == -1) { // First element only
         m_front = m_rear = 0;
         arr[m_rear] = newNode;
     }
-    else if (m_rear == m_MAXSIZE - 1) {
+    else if (m_rear == m_MAXSIZE - 1) { //Reset rear
         m_rear = 0;
         arr[m_rear] = newNode;
     } else {
         m_rear++;
         arr[m_rear] = newNode;
     }
-}
+}*/
 void queue::update(node** a, int arrSize, int curIndex) { //heapifies min heap
     bool swapped_left = false;
     bool swapped_right = false;
@@ -81,7 +98,7 @@ void queue::update(node** a, int arrSize, int curIndex) { //heapifies min heap
     else if (swapped_right)
            update(a, arrSize, 2 * curIndex + 2);
 }
-//int queue::size() const { return m_size; }
+int queue::size() const { return m_size; }
 bool queue::swap(node* a, node* b) {
     node temp;
     temp = *a;
