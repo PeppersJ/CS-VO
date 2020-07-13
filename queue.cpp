@@ -24,6 +24,16 @@ bool queue::isfull() {
     return false;
 }
 bool queue::isempty() { return (m_front == -1) ? true : false; }
+int queue::peek() {
+    if (isempty())
+        return -1;
+    return arr[m_front]->data;
+}
+int queue::tail() {
+    if (isempty())
+        return -1;
+    return arr[m_rear]->data;
+}
 int queue::dequeue() {
     if (isempty())
         return -1;

@@ -1,8 +1,10 @@
 #ifndef ENTITES_H
 #define ENTITES_H
 #include "collison.h"
+#include "charMap.h"
 #include "queue.h"
 
+class charMap;
 class world;
 struct cell;
 class entity_t : public collison {
@@ -41,6 +43,7 @@ public:
     int diffuse(bool ticking);
     bool isPlanted() const;
     bool isDiffused() const;
+    bool beingGrabed{ false };  //for use with player AI
 private:
     bool m_planted{ false };
     bool m_diffused{ false };
@@ -63,7 +66,7 @@ private:
 class player : public entity_t {
 public:
     enum Status{
-        Do_Nothing, Get_Bomb, Planting, Diffusing
+        Do_Nothing, Get_Bomb, Moving, Planting, Diffusing
     };
     player();
     player(const player& ent);
@@ -72,16 +75,21 @@ public:
     bool plantBomb();
     void takeDamage(int amount);
     void death();
-    int move();
-    int thinkAi() const;
-    int thinkAi(int newStatus);
+    char moveDir(const charMap*);
+    int moveDest() const;
+    int status() const;
+    int updateStatus(int newStatus);
     bool isAlive() const;
+    bool isTerrorist() const;
+    void think(const charMap* wolrd, bomb* bmb);
     int health() const;
     int priorStatus() const;
     int curStatus{ Do_Nothing };
     bool hasBomb { false };
 private:
     bool m_alive{ true };
+    bool m_isTerrorist{ false };
+    int m_moveDest{ -1 };
     int m_diffuseTime{ 5 };
     int m_health{ 100 };
     int m_priorStatus{ Do_Nothing };

@@ -17,6 +17,8 @@ public:
     ~queue();
     const node& operator [](int i) const;
     int dequeue();
+    int peek();
+    int tail();
     void enqueue(int);
     bool isempty();
     bool isfull();

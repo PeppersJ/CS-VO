@@ -131,21 +131,40 @@ void player::death() {
     m_speed = 0;
     colType = No_Collision;
 }
-int player::move() {
-
+int player::moveDest() const { return m_moveDest; }
+char player::moveDir(const charMap* world) {
+// Returns the action needed to reach next cell in path
+    return world->neighborDir(curPos->pathID, m_moveDest);
 }
-int player::thinkAi() const { return m_priorStatus; }
-int player::thinkAi(int newStatus) {
+void player::think(const charMap* world, bomb* bmb) {
+    if (isTerrorist()) {
+        if (bmb) { //Check if bomb is dropped
+            if (bmb->isPlanted() == false, bmb->beingGrabed == false) {
+                bmb->beingGrabed = true;
+                m_moveDest = bmb->curPos->pathID;
+                updateStatus(Get_Bomb);
+            }
+        } else {
+            m_moveDest = world->siteA()->pathID;
+            updateStatus(Moving);
+        }
+    }
+}
+int player::status() const { return m_priorStatus; }
+int player::updateStatus(int newStatus) {
     curStatus = newStatus;
     m_priorStatus = newStatus;
     switch(curStatus) {
         case Do_Nothing:
             return Do_Nothing;
+        case Moving:
+            return Moving;
         case Get_Bomb:
             return Get_Bomb;
     }
 }
 bool player::isAlive() const { return m_alive; }
+bool player::isTerrorist() const { return m_isTerrorist ? true : false; }
 int player::health() const { return m_health; }
 int player::priorStatus() const { return m_priorStatus; }
 bool player::plantBomb() {
