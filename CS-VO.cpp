@@ -10,94 +10,28 @@
 // Fix deuque
 // Fix enquenext
 // Make node subscript operator a const function
+// Possibly assign internal pointer in player function to reference world
 
 //CS:VO created by Rishawn Peppers Johnson
-//Complie as: g++ assign12.cpp -std==c++17 -lncurses
-#include <fstream>      //File Streams
+//Complie as: ./csvo.sh
 #include <stdlib.h>     //srand
-#include <ncurses.h>    //I/O to terminal
 #include <vector>       //vector
 #include <cstdlib>      //rand
 #include "queue.h"
 #include "collison.h"
 #include "entities.h"
+#include "charMap.h"
 
 // *****************************
 // Main Code
 // *****************************
-
-class charMap;
-struct cell : public collison {
-    char model() const { 
-        if ( ent == NULL )
-            return obj;
-        else
-            return ent->model();
-    }
-    cell(int p = -1) : pathID(p) {}
-    cell(const cell& objB) {
-        ent = objB.ent;
-        obj = objB.obj;
-        y = objB.y;
-        x = objB.x;
-        pathID = objB.pathID;
-    }
-    int col() const {
-        if (ent == NULL)
-            return colType;
-        else 
-            return ent->colType;
-    }
-    entity_t* ent{ NULL };
-    char obj{ ' ' };
-    int y{ 0 }, x{ 0 };
-    int pathID{ -1 };
-
-    cell* above{ NULL };
-    cell* below{ NULL };
-    cell* left{ NULL };
-    cell* right{ NULL };
-};
-
-class charMap {
-public:
-    charMap(){ /*Empty*/ }
-    charMap(std::string mapName);
-    ~charMap();
-    void printMap() const;
-    bool inBounds(cell* c) const { // returns true when the cell is in bounds
-        if( c == NULL )
-            return false;
-        return true;
-    }
-
-    std::string name() const { return mapName; }
-    cell* tSpawn() const { return m_tSpawn; }
-    cell* ctSpawn() const { return m_ctSpawn; }
-    cell* bombSpawn() const { return m_bombSpawn; }
-    int width() const { return m_width; }
-    int height() const { return m_height; }
-
-    cell*& operator [](int i) {
-        return map[i];
-    }
-    cell** map{ NULL };
-
-private:
-    std::string mapName { "" };
-    int m_width{ 0 }, m_height{ 0 };
-    cell* m_tSpawn{ NULL };
-    cell* m_ctSpawn{ NULL };
-    cell* m_bombSpawn{ NULL };
-    int cellCnt{ 0 };
-};
 
 class world {
 public:
     enum Direction {
         Up, Right, Down, Left
     };
-    world(){ }
+    world();
     world(std::string mapName);
     ~world();
     void printMap() const;
@@ -149,25 +83,7 @@ public:
         *b = temp;
         return true;
     }
-    char isNeighboor(int a, int b) {
-        int scale = 1;
-        if( a < 0 || b < 0 || a > worldMap->height() * worldMap->width() || b > worldMap->height() * worldMap->width())
-            return 'n';
-
-        if (a - b == 1 && a % (worldMap->width()) != 0) //Right
-            return 'd';
-        else if (a - b == -1 && a % worldMap->width() != 0 ) //Left
-            return 'a';
-        else if (a - b == worldMap->width() && a <= (worldMap->width() * worldMap->height()) - worldMap->width() - 1) //Below
-            return 's';
-        else if (a - b == worldMap->width() * -1 && a >= worldMap->width()) //Above
-            return 'w';
-
-        return 'n';
-    }
-    queue& pathFinding(cell* s, cell* d) {
-        int source = s->pathID;
-        int dest = d->pathID;
+    queue& pathFinding(int source, int dest) {
         int bound = worldMap->width() * worldMap->height();
         std::vector<int> map(bound, std::numeric_limits<int>::max());  // Every cell on map
         std::vector<int> traverse(bound, false);
@@ -208,7 +124,7 @@ public:
 
             char dir_temp;
             for (int j = 0; j < bound; j++) {
-                dir_temp = isNeighboor(ndx, j);
+                dir_temp = worldMap->neighborDir(ndx, j); /**** May cause problems ****/
                 if(dir_temp != 'n' && map[ndx] != std::numeric_limits<int>::max()) {
                     if(map[ndx] + 1 < map[j] && !shortest[j]) {
                         if( traverse[j] == collison::Player_Pass_Through ) {
@@ -244,10 +160,6 @@ public:
                     }
                 }
             }
-
-            count = i;
-            if (ndx == d->pathID)
-                break;
         }
 
         int cur = dest;
@@ -279,6 +191,9 @@ public:
             }
             cur = parent[cur].data;
         }*/
+    }
+    queue& pathFinding(cell* s, cell* d) {
+        pathFinding( s->pathID, d->pathID);
     }
     void victory(bool tSideWin) {
  //       win = true;
@@ -357,10 +272,22 @@ public:
                 else if ( m_ent[i]->whatAmI() == entity_t::Bullet )
                     move(m_ent[i], m_ent[i]->lastDir, m_ent[i]->speed());
                 else if ( m_ent[i]->whatAmI() == entity_t::Player ) {
-                    static_cast<player*>(m_ent[i])->thinkAi();
-                   /* if( m_ent[i]->goal == m_ent[i]->priorGoal() ){
+                    player* p = static_cast<player*>(m_ent[i]);
+                    p->think(worldMap, theBomb);
 
-                    }*/
+                    if (p->status() == player::Moving) {
+                        if(p->path == NULL)
+                            *p->path = pathFinding(p->curPos->pathID, p->moveDest());
+
+                        else if(p->path->tail() == p->moveDest()) { // Check if same dest
+                            if( move(m_ent[i], p->moveDir(worldMap)) ) //Check if traversable
+                                p->path->dequeue();
+                        } else {
+                            delete p->path; /****Check functionality****/
+                            *p->path = pathFinding(p->curPos->pathID, p->moveDest());
+                            move(m_ent[i], p->path->dequeue());
+                        }
+                    }
                 }
             }
         }
@@ -371,6 +298,7 @@ public:
                 return false;
         return true;
     }
+
     bool move(entity_t* e, int dir) {
         charMap& worldMapRef = *worldMap;
            
@@ -520,9 +448,14 @@ public:
             return false;
         }
         return false;
-}
+    }
 
-
+    bool bombPlanted() const {
+        if(theBomb != NULL)
+            if (theBomb->isPlanted())
+                return true;
+        return false;
+    }
 private:
     std::vector<entity_t*> m_ent{ NULL };
     charMap* worldMap{ NULL };
@@ -549,86 +482,7 @@ int main() {
     endwin();
     return 0;
 }
-
-charMap::charMap(std::string fileName) {
-    std::ifstream inFile(fileName);
-    char temp;
-    if(inFile) {
-        inFile >> mapName;
-        inFile >> m_height >> temp >> m_width;
-
-        map = new cell*[m_height];
-        for (int i = 0; i < m_height; i++) {
-            map[i] = new cell[m_width];
-            for (int j = 0; j < m_width; j++) {
-                inFile >> map[i][j].obj >> std::noskipws;
-                map[i][j].y = i;
-                map[i][j].x = j;
-                map[i][j].pathID = cellCnt++;
-
-                if (map[i][j].obj == 'C'){
-                    map[i][j].colType = collison::No_Collision;
-                    m_ctSpawn = &map[i][j];
-                }
-                else if (map[i][j].obj == 'T'){
-                    map[i][j].colType = collison::No_Collision;
-                    m_tSpawn = &map[i][j];
-                }
-                else if (map[i][j].obj == '#') {
-                    map[i][j].colType = collison::Player_Pass_Through;
-                }
-                else if (map[i][j].obj == 'o') {
-                    map[i][j].colType = collison::Bullet_Pass_Through;  
-                }
-                else if (map[i][j].obj == 'x' ) {
-                    map[i][j].colType = collison::Solid_Collision;
-                }
-                else if (map[i][j].obj == 'n') {
-                    map[i][j].colType = collison::Solid_Collision;
-                }
-                else if (map[i][j].obj == 'B') {
-                    map[i][j].obj = ' ';
-                    map[i][j].colType = collison::No_Collision;
-                    m_bombSpawn = &map[i][j];
-                }
-                else
-                    map[i][j].colType = collison::No_Collision;           
-            }
-            inFile >> std::skipws;
-        }
-        for (int i = 0; i < m_height; i++)
-            for (int j = 0; j < m_width; j++) {
-                if ( j > 0 )
-                    map[i][j].left = &map[i][j - 1];
-                if ( j < m_width )
-                    map[i][j].right = &map[i][j + 1];
-                if ( i > 0 )
-                    map[i][j].above = &map[i - 1][j];
-                if ( i < m_height )
-                    map[i][j].below = &map[i + 1][j];
-            }
-        inFile.close();
-    } else { printf("Error Opening File\n"); }
-}
-
-charMap::~charMap(){
-    if(map == NULL) return;
-    for(int i = 0; i < m_height; i++)
-        delete[] map[i];
-    delete[] map;
-}
-
-void charMap::printMap() const {
-    printw("Map: '%s' with dimensions %dx%d!\n", 
-            mapName.c_str(), m_height, m_width);
-    
-    for(int i = 0; i < m_height; i++) {
-        for(int j = 0; j < m_width; j++)
-            printw("%c", map[i][j].obj);
-        printw("\n");
-    }   
-}
-
+world::world(){ }
 world::world(std::string mapName) {
     worldMap = new charMap(mapName);
     charMap& worldMapRef = *worldMap;
