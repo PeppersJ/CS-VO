@@ -15,17 +15,19 @@ public:
     enum ObjectType { 
         Player, Object, Bullet, Invalid
     };
+
     entity_t();
     entity_t(const entity_t& objB);
+
+    virtual int whatAmI() const;
+
     char model() const;
     int speed() const;
-    virtual int whatAmI() const;
 
     cell* curPos{ NULL };
     int lastDir{ Up };
     int ID{ -1 };
     int dirEntered{ -1 };
-    queue* path{ NULL }; 
 protected:
     char m_model{ ' ' };
     int m_type{ Invalid };
@@ -38,7 +40,7 @@ private:
 class bomb : public entity_t {
 public:
     bomb();
-    bomb(bool p);
+    bomb(bool planted);
     int countdown(bool ticking);
     int diffuse(bool ticking);
     bool isPlanted() const;
@@ -48,6 +50,7 @@ private:
     bool m_planted{ false };
     bool m_diffused{ false };
     bool m_explode{ false };
+    bool m_dropped{ true };
     int m_time{ 10 }; //in ticks
     int m_timeDiffuse { DIFFUSE_TIME };
     const int DIFFUSE_TIME { 5 };
@@ -69,30 +72,34 @@ public:
         Do_Nothing, Get_Bomb, Moving, Planting, Diffusing
     };
     player();
+    player(bool ai, bool terrorist);
     player(const player& ent);
     player(cell* pos);
     bullet* shoot(int dir = -1);
-    bool plantBomb();
+    bomb* plantBomb(bomb* );
     void takeDamage(int amount);
     void death();
     char moveDir(const charMap*);
     int moveDest() const;
     int status() const;
     int updateStatus(int newStatus);
+    bool isAi() const;
     bool isAlive() const;
     bool isTerrorist() const;
-    void think(const charMap* wolrd, bomb* bmb);
+    int think(const charMap* wolrd, bomb* bmb);
     int health() const;
     int priorStatus() const;
     int curStatus{ Do_Nothing };
     bool hasBomb { false };
+    queue* path{ NULL }; 
 private:
+    bool m_isAi{ true };
     bool m_alive{ true };
     bool m_isTerrorist{ false };
     int m_moveDest{ -1 };
     int m_diffuseTime{ 5 };
     int m_health{ 100 };
-    int m_priorStatus{ Do_Nothing };
+    int m_priorStatus{ -1 };
 };
 
 #endif

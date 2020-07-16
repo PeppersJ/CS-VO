@@ -10,7 +10,6 @@ entity_t::entity_t(const entity_t& objB) : ID(entCnt++) {
     m_model = objB.model();
     lastDir = objB.lastDir;
     m_speed = objB.speed();
-    path = objB.path;
 }
 char entity_t::model() const { return m_model; }
 int entity_t::speed() const { return m_speed; }
@@ -69,7 +68,6 @@ bullet::bullet (entity_t e) {
     lastDir = e.lastDir;
     m_speed = e.speed();
     dirEntered = e.dirEntered;
-    path = e.path;
 }
 bullet::bullet(int d, cell* pos, int dirEntered) {
     m_type = Bullet;
@@ -91,6 +89,13 @@ player::player() {
     m_model = '@';
     m_speed = 1;
 }
+player::player(bool ai = false, bool t = false) : m_isAi(ai), m_isTerrorist(t) {
+    m_type = Player;
+    colType = Player_Collison;
+    m_model = '@';
+    m_speed = 1;
+}
+
 player::player(const player& ent){
     m_type = ent.whatAmI();
     colType = ent.colType;
@@ -134,46 +139,50 @@ void player::death() {
 int player::moveDest() const { return m_moveDest; }
 char player::moveDir(const charMap* world) {
 // Returns the action needed to reach next cell in path
-    return world->neighborDir(curPos->pathID, m_moveDest);
+    return world->neighborDir(path->peek(), curPos->pathID);
 }
-void player::think(const charMap* world, bomb* bmb) {
-    if (isTerrorist()) {
-        if (bmb) { //Check if bomb is dropped
+int player::think(const charMap* world, bomb* bmb) {
+    if (isTerrorist() && isAi()) {
+        if (bmb && bmb->isPlanted() == false) { //Check if bomb is dropped
             if (bmb->isPlanted() == false, bmb->beingGrabed == false) {
                 bmb->beingGrabed = true;
                 m_moveDest = bmb->curPos->pathID;
-                updateStatus(Get_Bomb);
+                return updateStatus(Get_Bomb);
+            } else if ( status() == Get_Bomb ){
+                return updateStatus(Get_Bomb);
             }
-        } else {
+
+        } else { //Bomb isn't dropped
+            if (hasBomb && status() != Planting) {
+                m_moveDest = world->siteA()->pathID;
+                return updateStatus(Planting);
+            } else if (hasBomb && status() == Planting) {
+                if (curPos->pathID == m_moveDest)
+                    plantBomb(bmb);
+                return updateStatus(Planting);
+            }
             m_moveDest = world->siteA()->pathID;
-            updateStatus(Moving);
+            return updateStatus(Moving);
         }
     }
+    return -1;
 }
 int player::status() const { return m_priorStatus; }
 int player::updateStatus(int newStatus) {
     curStatus = newStatus;
     m_priorStatus = newStatus;
-    switch(curStatus) {
-        case Do_Nothing:
-            return Do_Nothing;
-        case Moving:
-            return Moving;
-        case Get_Bomb:
-            return Get_Bomb;
-    }
 }
+bool player::isAi() const { return m_isAi; }
 bool player::isAlive() const { return m_alive; }
 bool player::isTerrorist() const { return m_isTerrorist ? true : false; }
 int player::health() const { return m_health; }
 int player::priorStatus() const { return m_priorStatus; }
-bool player::plantBomb() {
+bomb* player::plantBomb(bomb* b) {
     if (hasBomb == true) {
-        m_priorStatus = curStatus;
-        curStatus = Planting;
+        printw("PLANTING");
         hasBomb = false;
-        printw("Planting");
-        return true;
+        b = new bomb(true);
+        return b;
     }
-    return false;
+    return NULL;
 }
