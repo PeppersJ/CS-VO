@@ -1,2 +1,2 @@
 #!/bin/bash
-g++ CS-VO.cpp queue.cpp collison.cpp entities.cpp charMap.cpp -g -std=c++17 -lncurses
+g++ CS-VO.cpp queue.cpp collison.cpp entities.cpp charMap.cpp world.cpp -g -std=c++17 -lncurses
