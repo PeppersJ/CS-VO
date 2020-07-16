@@ -8,28 +8,31 @@ queue::queue(int size) : m_MAXSIZE(size) {
     m_front = m_rear = -1;
     arr = new node*[m_MAXSIZE];
     for(int i = 0; i < m_MAXSIZE; i++)
-    arr[i] = new node;
+        arr[i] = new node;
 }
 queue::~queue(){
-    for(int i = 0; i < m_MAXSIZE; i++)
+    for(int i = 0; i < m_MAXSIZE; i++) {
         delete arr[i];
+        arr[i] = NULL;
+    }
     delete[] arr;
+    arr = NULL;
 }
-const node& queue::operator [](int i) const{
-    return *arr[i];
+int queue::operator [](int i) const {
+    return arr[i]->data;
 }
-bool queue::isfull() { 
+bool queue::isfull() const { 
     if(m_front == 0 && m_rear == m_MAXSIZE - 1 || m_rear == m_front - 1)
         return true;
     return false;
 }
-bool queue::isempty() { return (m_front == -1) ? true : false; }
-int queue::peek() {
+bool queue::isempty() const { return m_front == -1; }
+int queue::peek() const {
     if (isempty())
         return -1;
     return arr[m_front]->data;
 }
-int queue::tail() {
+int queue::tail() const {
     if (isempty())
         return -1;
     return arr[m_rear]->data;
@@ -41,6 +44,7 @@ int queue::dequeue() {
     node* temp = arr[m_front];  // preserve
     arr[m_front]->data = -1;    // reset
     arr[m_front]->priority = -1;
+
     if (m_front == m_rear)
         m_front = m_rear = -1;
     else if (m_front == m_MAXSIZE - 1)
@@ -49,7 +53,7 @@ int queue::dequeue() {
         m_front++;
     m_size--;
 
-    return arr[m_front]->data;
+    return temp->data;
 }
 void queue::enqueue(int newData) {
     if (isfull()) // Do nothing
@@ -67,31 +71,16 @@ void queue::enqueue(int newData) {
     }
     m_size++;
 }
-/*node* queue::enqueue(node* newNode) {
-    if (isfull()) 
-        return arr[0];
-    else if (m_front == -1) { // First element only
-        m_front = m_rear = 0;
-        arr[m_rear] = newNode;
-    }
-    else if (m_rear == m_MAXSIZE - 1) { //Reset rear
-        m_rear = 0;
-        arr[m_rear] = newNode;
-    } else {
-        m_rear++;
-        arr[m_rear] = newNode;
-    }
-}*/
-void queue::update(node** a, int arrSize, int curIndex) { //heapifies min heap
+void queue::heapify(node** a, int arrSize, int curIndex) { //heapifies min heap
     bool swapped_left = false;
     bool swapped_right = false;
 
    //Recursion
     if (2 * curIndex + 1 < arrSize)   // left
-        update(a, arrSize, 2 * curIndex + 1);
+        heapify(a, arrSize, 2 * curIndex + 1);
 
     if (2 * curIndex + 2 < arrSize)   // right
-        update(a, arrSize, 2 * curIndex + 2);
+        heapify(a, arrSize, 2 * curIndex + 2);
 
    //Swapping
     if (2 * curIndex + 1 < arrSize)   // left
@@ -104,9 +93,9 @@ void queue::update(node** a, int arrSize, int curIndex) { //heapifies min heap
 
    //Update sub-trees if altered
     if (swapped_left)
-        update(a, arrSize, 2 * curIndex + 1);
+        heapify(a, arrSize, 2 * curIndex + 1);
     else if (swapped_right)
-           update(a, arrSize, 2 * curIndex + 2);
+           heapify(a, arrSize, 2 * curIndex + 2);
 }
 int queue::size() const { return m_size; }
 bool queue::swap(node* a, node* b) {
