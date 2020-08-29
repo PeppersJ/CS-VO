@@ -3,14 +3,15 @@
 // Add corpses
 // SegFalt on shooting w/o moving
 // Fix double damge when shooting adjacant
-// Fix incositant spawning of t side players
+// Fix incositant spawning of players
 // Fix getting stuck after bomb has been planted
-// Throw error for missing m
+// Throw error for missing map
 // Fix diffusing
 // Fix deuque
 // Fix enquenext
 // Make node subscript operator a const function
 // Possibly assign internal pointer in player function to reference world
+// Moving left at start into AI causes crash
 
 //CS:VO created by Rishawn Peppers Johnson
 //Complie as: ./csvo.sh
@@ -34,7 +35,7 @@ int main() {
         usrIn = getch(); // wait for input to close
         w.update(usrIn);
         w.refresh();
-        move(0,0);
+        move(0,0);  // reset "cursor"
     }
 
     endwin();
