@@ -234,22 +234,34 @@ void world::printMap() const {
         else
             printw("CT WINS");
     }
-    void world::plantBomb(entity_t* e) {
+    bool world::plantBomb(entity_t* e) {
         if(player* p = dynamic_cast<player*>(e))
             if (p->plantBomb(theBomb)) {
                 switch (p->lastDir){
                     case Up:
-                        theBomb = spawn(new bomb(true), p->curPos->above);
-                        break;
+                        if (p->curPos->above->col() == entity_t::No_Collision) {
+                            theBomb = spawn(new bomb(true), p->curPos->above);
+                            return true;
+                        }
+                        return false;
                     case Down:
-                        theBomb = spawn(new bomb(true), p->curPos->below);
-                        break;
+                        if (p->curPos->below->col() == entity_t::No_Collision) {
+                            theBomb = spawn(new bomb(true), p->curPos->below);
+                            return true;
+                        }
+                        return false;
                     case Left:
-                        theBomb = spawn(new bomb(true), p->curPos->left);
-                        break;
+                        if (p->curPos->left->col() == entity_t::No_Collision) {
+                            theBomb = spawn(new bomb(true), p->curPos->left);
+                            return true;
+                        }
+                        return false;
                     case Right:
-                        theBomb = spawn(new bomb(true), p->curPos->right);
-                        break;
+                        if (p->curPos->right->col() == entity_t::No_Collision) { 
+                            theBomb = spawn(new bomb(true), p->curPos->right);
+                            return true;
+                        }
+                        return false;
                 }
             }
     }
@@ -289,12 +301,13 @@ void world::printMap() const {
     } 
     int c {0};
     void world::refresh() {
+        int attempts = 0;
         for ( int i = 0; i < entity_t::entCnt; i++) {
             if ( m_ent[i] != NULL ) {
                 if ( m_ent[i]->whatAmI() == entity_t::Object ) {
                     if ( bomb* b = dynamic_cast<bomb*>(m_ent[i]) ){
                         if ( b->isPlanted() && b->isDiffused() == false) {
-                            printw("OI");
+                           // printw("OI");
                             if (b->countdown(true) == 0)
                                 victory(true);// Victory T 1
                         }
@@ -317,8 +330,18 @@ void world::printMap() const {
                             path(p);
                         } else if (p->status() == player::Planting) {
                             path(p);
-                            if (p->moveDest() == p->curPos->pathID) // Check if at bomb Site
-                                plantBomb(m_ent[i]);
+                            if (p->moveDest() == p->curPos->pathID) { // Check if at bomb Site
+                                attempts = 3;
+                                while (!plantBomb(m_ent[i]) && attempts != 0) { // If plant fails, turn try again
+                                    plantBomb(m_ent[i]);
+                                    if(p->lastDir == Left) //If last value in enum is hit, restet to 1st value
+                                        p->lastDir = 0;
+                                    p->lastDir++;
+                                    attempts--;
+                                }
+                                if (theBomb)
+                                    p->hasBomb = false;
+                            }
                         }
                         //else printw("STATUS: %d", p->status());
                     }
@@ -329,7 +352,7 @@ void world::printMap() const {
     void world::path(entity_t* e) {
         //handles creation of and traversing of path
         if ( player* p = static_cast<player*>(e) ) {
-            if(p->path == NULL) {
+            if(p->path == NULL) { // check if path already exists
                 p->path = &pathFinding(p->curPos->pathID, p->moveDest());
                 if( move(e, p->moveDir(worldMap)) ) //Check if traversable
                     int temp = p->path->dequeue();
@@ -368,6 +391,7 @@ void world::printMap() const {
         cell* colCell = NULL;
         // Less than 3 because 0 - 3 collion types in enitity_t are allowed movement
         if ( dir == Up && worldMap->inBounds(e->curPos->above)) {
+            e->lastDir = Up;
             cType = e->collide(e->curPos->above->col());
             colCell = e->curPos->above;
             //printw("Col:%d", cType);
@@ -396,11 +420,11 @@ void world::printMap() const {
                     e->curPos->above->ent = e;
                     e->curPos->ent = NULL;
                     e->curPos = e->curPos->above;
-                    e->lastDir = Up;
                     return true;
                 }
             }
         } else if ( dir == Down && worldMap->inBounds(e->curPos->below)) {
+            e->lastDir = Down;
             cType = e->collide(e->curPos->below->col());
             colCell = e->curPos->below;
             //printw("Col:%d", cType);
@@ -427,11 +451,11 @@ void world::printMap() const {
                     e->curPos->below->ent = e;
                     e->curPos->ent = NULL;
                     e->curPos = e->curPos->below;
-                    e->lastDir = Down;
                     return true;
                 }
             }
         } else if ( dir == Left && worldMap->inBounds(e->curPos->left)) {
+            e->lastDir = Left;
             cType = e->collide(e->curPos->left->col());
             colCell = e->curPos->left;
             //printw("Col:%d", cType);
@@ -459,11 +483,11 @@ void world::printMap() const {
                     colCell->ent = e;
                     e->curPos->ent = NULL; 
                     e->curPos = colCell;        
-                    e->lastDir = Left;
                     return true;
                 }
             }
         } else if ( dir == Right && worldMap->inBounds(e->curPos->right)) {
+            e->lastDir = Right;
             cType = e->collide(e->curPos->right->col());
             colCell = e->curPos->right;
             //printw("Col:%d", cType);
@@ -490,7 +514,6 @@ void world::printMap() const {
                     e->curPos->right->ent = e;
                     e->curPos->ent = NULL;
                     e->curPos = e->curPos->right;                     
-                    e->lastDir = Right;
                     return true;
                 }
             }
@@ -518,7 +541,6 @@ void world::printMap() const {
                 return true;
         return false;
     }
-
 // Cool little window
 /*
     int height = 10;

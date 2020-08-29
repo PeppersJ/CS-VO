@@ -30,7 +30,7 @@ public:
     void path(entity_t* e);
 
     void victory(bool tSideWin);
-    void plantBomb(entity_t* e);
+    bool plantBomb(entity_t* e);
     void diffuse(entity_t* e);
 
     void update(char usrIn);

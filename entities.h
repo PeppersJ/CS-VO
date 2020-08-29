@@ -1,5 +1,7 @@
 #ifndef ENTITES_H
 #define ENTITES_H
+#include <cstdlib>  //Rand
+#include <time.h>     //Rand
 #include "collison.h"
 #include "charMap.h"
 #include "queue.h"
@@ -10,7 +12,7 @@ struct cell;
 class entity_t : public collison {
 public:
     enum Direction {
-        Up, Right, Down, Left
+        Up, Right, Down, Left   //Order important for line world.cpp:337
     };
     enum ObjectType { 
         Player, Object, Bullet, Invalid
@@ -69,14 +71,14 @@ private:
 class player : public entity_t {
 public:
     enum Status{
-        Do_Nothing, Get_Bomb, Moving, Planting, Diffusing
+        Do_Nothing, Get_Bomb, Moving, Planting, Plant_Fail, Diffusing
     };
     player();
     player(bool ai, bool terrorist);
     player(const player& ent);
     player(cell* pos);
     bullet* shoot(int dir = -1);
-    bomb* plantBomb(bomb* );
+    bool plantBomb(bomb* );
     void takeDamage(int amount);
     void death();
     char moveDir(const charMap*);
@@ -92,6 +94,8 @@ public:
     int curStatus{ Do_Nothing };
     bool hasBomb { false };
     queue* path{ NULL }; 
+
+    cell* randCell(int height, int width) const;
 private:
     bool m_isAi{ true };
     bool m_alive{ true };

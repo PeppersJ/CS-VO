@@ -142,9 +142,10 @@ char player::moveDir(const charMap* world) {
     return world->neighborDir(path->peek(), curPos->pathID);
 }
 int player::think(const charMap* world, bomb* bmb) {
+    srand(time(NULL));
     if (isTerrorist() && isAi()) {
-        if (bmb && bmb->isPlanted() == false) { //Check if bomb is dropped
-            if (bmb->isPlanted() == false, bmb->beingGrabed == false) {
+        if (bmb && bmb->isPlanted() == false) { 
+            if (bmb->isPlanted() == false, bmb->beingGrabed == false) { //Check if bomb is dropped
                 bmb->beingGrabed = true;
                 m_moveDest = bmb->curPos->pathID;
                 return updateStatus(Get_Bomb);
@@ -153,15 +154,39 @@ int player::think(const charMap* world, bomb* bmb) {
             }
 
         } else { //Bomb isn't dropped
-            if (hasBomb && status() != Planting) {
-                m_moveDest = world->siteA()->pathID;
+            if (hasBomb && status() != Planting) { 
+                if (rand() % 2  >= 1) {  // Choose random plant site
+                    int Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
+                    int X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
+                    cell* temp = &(*world)[Y][X];
+                    m_moveDest = temp->pathID;
+                    while(temp->model() != 'P') {
+                        Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
+                        X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
+                        temp = &(*world)[Y][X];
+                        m_moveDest = temp->pathID;
+                    }
+                }
+                else {                    
+                    int Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
+                    int X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
+                    cell* temp = &(*world)[Y][X];
+                    m_moveDest = temp->pathID;
+                    while(temp->model() != 'P') {
+                        Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
+                        X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
+                        temp = &(*world)[Y][X];
+                        m_moveDest = temp->pathID;
+                    }
+                }
                 return updateStatus(Planting);
             } else if (hasBomb && status() == Planting) {
-                if (curPos->pathID == m_moveDest)
-                    plantBomb(bmb);
+                //if (curPos->pathID == m_moveDest)
+                   // plantBomb(bmb);
                 return updateStatus(Planting);
             }
-            m_moveDest = world->siteA()->pathID;
+            //if (status() == Plant_Fail)
+            //m_moveDest = world->siteA()->pathID;
             return updateStatus(Moving);
         }
     }
@@ -177,12 +202,14 @@ bool player::isAlive() const { return m_alive; }
 bool player::isTerrorist() const { return m_isTerrorist ? true : false; }
 int player::health() const { return m_health; }
 int player::priorStatus() const { return m_priorStatus; }
-bomb* player::plantBomb(bomb* b) {
+
+bool player::plantBomb(bomb* b){
     if (hasBomb == true) {
         printw("PLANTING");
-        hasBomb = false;
-        b = new bomb(true);
-        return b;
+        return true;
+        //hasBomb = false;
+        //b = new bomb(true);
+        //return b;
     }
-    return NULL;
+    return false;
 }
