@@ -93,9 +93,8 @@ charMap::charMap(std::string fileName) {
                     map[i][j].colType = collison::No_Collision;
                     m_siteB = &map[i][j];
                 }
-                else if (map[i][j].obj == '3') {
+                else if (map[i][j].obj == 'P') {
                     map[i][j].colType = collison::No_Collision;
-                    m_siteC = &map[i][j];
                 }
                 else
                     map[i][j].colType = collison::No_Collision;           
@@ -112,6 +111,19 @@ charMap::charMap(std::string fileName) {
                     map[i][j].above = &map[i - 1][j];
                 if ( i < m_height )
                     map[i][j].below = &map[i + 1][j];
+
+                // Determine size of plant region
+                if (map[i][j].model() == 'P') {
+                    if (siteA()->x + siteAWidth() + 1 == j && siteA()->y + siteAHeight() <= j)
+                        m_siteA_width++;
+                    if (siteA()->y + siteAHeight() == i && siteA()->x + siteAWidth() + 1 >= i)
+                        m_siteA_height++;
+
+                    if (siteB()->x + siteBWidth() + 1 == j && siteB()->y + siteBHeight() + 1 <= j)
+                        m_siteB_width++;
+                    if (siteB()->y + siteBHeight() == i && siteB()->x + siteBWidth() >= i)
+                        m_siteB_height++;
+                }
             }
         inFile.close();
     } else { printf("Error Opening File\n"); }
@@ -141,10 +153,14 @@ cell* charMap::ctSpawn() const { return m_ctSpawn; }
 cell* charMap::siteA() const { return m_siteA; }
 cell* charMap::siteB() const { return m_siteB; }
 cell* charMap::siteC() const { return m_siteC; }
+int charMap::siteAWidth() const { return m_siteA_width; }
+int charMap::siteAHeight() const { return m_siteA_height; }
+int charMap::siteBWidth() const { return m_siteB_width; }
+int charMap::siteBHeight() const { return m_siteB_height; }
 cell* charMap::bombSpawn() const { return m_bombSpawn; }
 int charMap::width() const { return m_width; }
 int charMap::height() const { return m_height; }
 
-cell*& charMap::operator [](int i) {
+cell*& charMap::operator [](int i) const {
     return map[i];
 }

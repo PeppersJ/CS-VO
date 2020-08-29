@@ -42,18 +42,20 @@ public:
     cell* bombSpawn() const;
     int width() const;
     int height() const;
-
-    cell*& operator [](int i);
+    int siteAWidth() const;
+    int siteAHeight() const;
+    int siteBWidth() const;
+    int siteBHeight() const;
+    cell*& operator [](int i) const;
     cell** map{ NULL };
 
 private:
     std::string mapName { "" };
-    int m_width{ 0 }, m_height{ 0 };
-    cell* m_tSpawn{ NULL };
-    cell* m_ctSpawn{ NULL };
-    cell* m_siteA{ NULL };
-    cell* m_siteB{ NULL };
-    cell* m_siteC{ NULL };
+    int m_height{ 0 }, m_width{ 0 }; // Dimensions of map
+    int m_siteA_height{ 0 }, m_siteA_width{ 0 }; // Dimensions of plant sites
+    int m_siteB_height{ 0 }, m_siteB_width{ 0 };
+    cell* m_siteA{ NULL }, *m_siteB{ NULL }, *m_siteC{ NULL };
+    cell* m_tSpawn{ NULL }, *m_ctSpawn{ NULL };
     cell* m_bombSpawn{ NULL };
     int cellCnt{ 0 };
 };
