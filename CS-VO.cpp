@@ -1,17 +1,12 @@
-// Fix bomb planting to include collison
 // Fix running out of memory space (Crashes on 52 entitiy)
 // Add corpses
 // SegFalt on shooting w/o moving
 // Fix double damge when shooting adjacant
-// Fix incositant spawning of players
-// Fix getting stuck after bomb has been planted
 // Throw error for missing map
-// Fix diffusing
 // Fix deuque
 // Fix enquenext
 // Make node subscript operator a const function
 // Possibly assign internal pointer in player function to reference world
-// Moving left at start into AI causes crash
 
 //CS:VO created by Rishawn Peppers Johnson
 //Complie as: ./csvo.sh
@@ -25,9 +20,23 @@
 
 int main() {
     initscr();
+    if (has_colors == FALSE) {
+        endwin();
+        printf("Your terminal does not support color\n");
+        exit(1);
+    }
+    start_color();
+    if (can_change_color() == FALSE) {
+        endwin();
+        printf("Your terminal does not changing colors, using deafult colors\n");
+    }
 
     // Generate world.
     world w("sjf_dust2.txt");
+    //int BACKGROUND = 8;
+    //init_color(BACKGROUND, 0,0,0);
+    //init_pair(1, COLOR_RED, BACKGROUND);
+    //attron(COLOR_PAIR(1));
 
     char usrIn;
     while( usrIn != 'q' ) {
@@ -55,4 +64,8 @@ int main() {
   //  wprintw(win, "this is my box");
     mvwprintw(win, 1, 1, "this is my box");
     wrefresh(win);
+
+// Middle of screen print
+    print_in_middle(stdscr, LINES / 2, 0, 0, "Viola !!! In color ...");
+
 */
