@@ -1,19 +1,21 @@
-#include <ncurses.h>    //I/O to terminal
 #include "entities.h"
 // ----  ---- //
 //	entity_t  //
 // ----  ---- //
-entity_t::entity_t() : ID(entCnt++) {}
+entity_t::entity_t() : ID(entCnt++) { }
 entity_t::entity_t(const entity_t& objB) : ID(entCnt++) {
     colType = objB.colType;
     curPos = objB.curPos;
     m_model = objB.model();
     lastDir = objB.lastDir;
     m_speed = objB.speed();
+    m_color = objB.color();
 }
 char entity_t::model() const { return m_model; }
 int entity_t::speed() const { return m_speed; }
 int entity_t::whatAmI() const { return m_type; }
+int entity_t::color () const { return m_color; }
+
 int entity_t::entCnt = 0;
 
 // ---- //
@@ -24,12 +26,14 @@ bomb::bomb() {
         colType = Object_Collison;
         m_model = 'B';
         m_speed = 0;
+        m_color = colors::Color_Bomb;
     }
 bomb::bomb(bool p) : m_planted(p) {
         m_type = Object;
         colType = Object_Collison;
         m_model = 'B';
         m_speed = 0;
+        m_color = colors::Color_Bomb;
     }
 int bomb::countdown(bool ticking) {
     if (m_planted == true) {
@@ -68,6 +72,7 @@ bullet::bullet (entity_t e) {
     lastDir = e.lastDir;
     m_speed = e.speed();
     dirEntered = e.dirEntered;
+    m_color = e.color();
 }
 bullet::bullet(int d, cell* pos, int dirEntered) {
     m_type = Bullet;
@@ -77,6 +82,7 @@ bullet::bullet(int d, cell* pos, int dirEntered) {
     curPos = pos;
     m_speed = 3;
     this->dirEntered = dirEntered;
+    m_color = colors::Color_Bullet;
 }
 int bullet::damage() const { return m_damage; }
 
@@ -88,12 +94,24 @@ player::player() {
     colType = Player_Collison;
     m_model = '@';
     m_speed = 1;
+    if (!isAi())
+        m_color = colors::Color_Player;
+    if (isTerrorist())
+        m_color = colors::Color_T;
+    else
+        m_color = colors::Color_CT;
 }
 player::player(bool ai = false, bool t = false) : m_isAi(ai), m_isTerrorist(t) {
     m_type = Player;
     colType = Player_Collison;
     m_model = '@';
     m_speed = 1;
+    if (!isAi())
+        m_color = colors::Color_Player;
+    if (isTerrorist())
+        m_color = colors::Color_T;
+    else
+        m_color = colors::Color_CT;
 }
 
 player::player(const player& ent){
@@ -107,6 +125,7 @@ player::player(const player& ent){
     m_health = ent.health();
     m_alive = ent.isAlive();
     path = ent.path;
+    m_color = ent.color();
 }
 player::player(cell* pos) { 
     m_type = Player;
@@ -114,6 +133,12 @@ player::player(cell* pos) {
     m_model = '@';
     curPos = pos;
     m_speed = 1;
+    if (!isAi())
+        m_color = colors::Color_Player;
+    if (isTerrorist())
+        m_color = colors::Color_T;
+    else
+        m_color = colors::Color_CT;
 }
 bullet* player::shoot(int dir) {
     if (dir == -1)
@@ -143,51 +168,64 @@ char player::moveDir(const charMap* world) {
 }
 int player::think(const charMap* world, bomb* bmb) {
     srand(time(NULL));
-    if (isTerrorist() && isAi()) {
-        if (bmb && bmb->isPlanted() == false) { 
-            if (bmb->isPlanted() == false, bmb->beingGrabed == false) { //Check if bomb is dropped
-                bmb->beingGrabed = true;
-                m_moveDest = bmb->curPos->pathID;
-                return updateStatus(Get_Bomb);
-            } else if ( status() == Get_Bomb ){
-                return updateStatus(Get_Bomb);
-            }
+    if (isAi()) {
+        if (isTerrorist()) {
+            if (bmb && bmb->isPlanted() == false) { 
+                if (bmb->beingGrabed == false) { //Check if bomb is dropped
+                    bmb->beingGrabed = true; // True when AI intends to grab bomb
+                    m_moveDest = bmb->curPos->pathID;
+                    return updateStatus(Get_Bomb);
+                } else if ( status() == Get_Bomb ) {
+                    return updateStatus(Get_Bomb);
+                }
 
-        } else { //Bomb isn't dropped
-            if (hasBomb && status() != Planting) { 
-                if (rand() % 2  >= 1) {  // Choose random plant site
-                    int Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
-                    int X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
-                    cell* temp = &(*world)[Y][X];
-                    m_moveDest = temp->pathID;
-                    while(temp->model() != 'P') {
-                        Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
-                        X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
-                        temp = &(*world)[Y][X];
+            } else { //Bomb isn't dropped
+                if (hasBomb && status() != Planting) { 
+                    if (rand() % 2  >= 1) {  // Choose random plant site
+                        int Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
+                        int X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
+                        cell* temp = &(*world)[Y][X];
                         m_moveDest = temp->pathID;
+                        while(temp->model() != 'P') {
+                            Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
+                            X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
+                            temp = &(*world)[Y][X];
+                            m_moveDest = temp->pathID;
+                        }
                     }
-                }
-                else {                    
-                    int Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
-                    int X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
-                    cell* temp = &(*world)[Y][X];
-                    m_moveDest = temp->pathID;
-                    while(temp->model() != 'P') {
-                        Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
-                        X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
-                        temp = &(*world)[Y][X];
+                    else {                    
+                        int Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
+                        int X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
+                        cell* temp = &(*world)[Y][X];
                         m_moveDest = temp->pathID;
+                        while(temp->model() != 'P') {
+                            Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
+                            X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
+                            temp = &(*world)[Y][X];
+                            m_moveDest = temp->pathID;
+                        }
                     }
+                    return updateStatus(Planting);
+                } else if (hasBomb && status() == Planting) {
+                    //if (curPos->pathID == m_moveDest)
+                       // plantBomb(bmb);
+                    return updateStatus(Planting);
                 }
-                return updateStatus(Planting);
-            } else if (hasBomb && status() == Planting) {
-                //if (curPos->pathID == m_moveDest)
-                   // plantBomb(bmb);
-                return updateStatus(Planting);
+                //if (status() == Plant_Fail)
+                //m_moveDest = world->siteA()->pathID;
+                return updateStatus(Moving);
             }
-            //if (status() == Plant_Fail)
-            //m_moveDest = world->siteA()->pathID;
-            return updateStatus(Moving);
+        }
+        if (!isTerrorist()) {
+            if(bmb && bmb->isPlanted() == true) {
+                if(bmb->beingDiffused == false) {
+                    bmb->beingDiffused = true;
+                    m_moveDest = bmb->curPos->pathID;
+                    return updateStatus(Diffusing);
+                } else if ( status() == Diffusing ){
+                    return updateStatus(Diffusing);
+                }
+            }
         }
     }
     return -1;
@@ -202,7 +240,6 @@ bool player::isAlive() const { return m_alive; }
 bool player::isTerrorist() const { return m_isTerrorist ? true : false; }
 int player::health() const { return m_health; }
 int player::priorStatus() const { return m_priorStatus; }
-
 bool player::plantBomb(bomb* b){
     if (hasBomb == true) {
         printw("PLANTING");

@@ -8,10 +8,12 @@
 class entity_t;
 class charMap;
 struct cell : public collison {
-    char model() const;
     cell(int p);
     cell(const cell& objB);
+
     int col() const;
+    int color() const;
+    char model() const;
 
     entity_t* ent{ NULL };
     char obj{ ' ' };
@@ -22,6 +24,9 @@ struct cell : public collison {
     cell* below{ NULL };
     cell* left{ NULL };
     cell* right{ NULL };
+private:
+    friend charMap;
+    int m_color{ COLOR_WHITE };
 };
 
 class charMap {

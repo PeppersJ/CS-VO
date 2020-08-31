@@ -1,11 +1,5 @@
 #include "charMap.h"
 
-char cell::model() const { 
-    if ( ent == NULL )
-        return obj;
-    else
-        return ent->model();
-}
 cell::cell(int p = -1) : pathID(p) {}
 cell::cell(const cell& objB) {
     ent = objB.ent;
@@ -20,14 +14,25 @@ int cell::col() const {
     else 
         return ent->colType;
 }
-
-
+int cell::color() const {
+    if (ent == NULL)
+        return m_color; // Defalut env color
+    else
+        return ent->color();
+}
+char cell::model() const { 
+    if ( ent == NULL )
+        return obj;
+    else
+        return ent->model();
+}
 bool charMap::inBounds(cell* c) const { // returns true when the cell is in bounds
     if( c == NULL )
         return false;
     return true;
 }
-char charMap::neighborDir(int a, int b) const{
+char charMap::neighborDir(int a, int b) const {
+    // Determine if next neigboring cells using pathID
     int scale = 1;
     if( a < 0 || b < 0 || a > height() * width() || b > height() * width())
         return 'n';
@@ -76,9 +81,11 @@ charMap::charMap(std::string fileName) {
                 }
                 else if (map[i][j].obj == 'x' ) {
                     map[i][j].colType = collison::Solid_Collision;
+                    map[i][j].m_color = colors::Color_Wall;
                 }
                 else if (map[i][j].obj == 'n') {
                     map[i][j].colType = collison::Solid_Collision;
+                    map[i][j].m_color = colors::Color_Invalid;
                 }
                 else if (map[i][j].obj == 'B') {
                     map[i][j].obj = ' ';

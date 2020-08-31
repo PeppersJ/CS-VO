@@ -2,6 +2,7 @@
 #define ENTITES_H
 #include <cstdlib>  //Rand
 #include <time.h>     //Rand
+#include "colors.h"
 #include "collison.h"
 #include "charMap.h"
 #include "queue.h"
@@ -17,7 +18,6 @@ public:
     enum ObjectType { 
         Player, Object, Bullet, Invalid
     };
-
     entity_t();
     entity_t(const entity_t& objB);
 
@@ -25,6 +25,7 @@ public:
 
     char model() const;
     int speed() const;
+    int color() const;
 
     cell* curPos{ NULL };
     int lastDir{ Up };
@@ -32,10 +33,13 @@ public:
     int dirEntered{ -1 };
 protected:
     char m_model{ ' ' };
+    int m_color{ COLOR_BLACK };
     int m_type{ Invalid };
     int m_speed{ 0 };
 private:
+    void defineColors();
     friend world;
+
     static int entCnt;
 };
 
@@ -48,14 +52,15 @@ public:
     bool isPlanted() const;
     bool isDiffused() const;
     bool beingGrabed{ false };  //for use with player AI
+    bool beingDiffused{ false };
 private:
     bool m_planted{ false };
     bool m_diffused{ false };
     bool m_explode{ false };
     bool m_dropped{ true };
-    int m_time{ 10 }; //in ticks
+    int m_time{ 120 }; //in ticks to explode
     int m_timeDiffuse { DIFFUSE_TIME };
-    const int DIFFUSE_TIME { 5 };
+    const int DIFFUSE_TIME { 20 };
 };
 
 class bullet : public entity_t {
