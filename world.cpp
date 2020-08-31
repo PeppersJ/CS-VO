@@ -1,12 +1,10 @@
 #include "world.h"
-
 world::world(){ /*Empty*/ }
 world::world(std::string mapName) {
     worldMap = new charMap(mapName);
     charMap& worldMapRef = *worldMap;
 
     m_ent.resize(50, NULL);
-    human = spawn(new player(false, true), worldMap->tSpawn());
 
     // Generate random side
     int side[10]; // stores rand player side
@@ -19,9 +17,15 @@ world::world(std::string mapName) {
 
     int tSideCount = 0;
     int ctSideCount = 0;
-    //human = static_cast<player*>(m_ent[0]);
+    if (side[0] == 0) {
+        human = spawn(new player(false, true), worldMap->tSpawn());
+        tSideCount++;
+    } else {
+        human = spawn(new player(false, false), worldMap->ctSpawn());
+        ctSideCount++;
+    }
     for (int i = 1; i < 10; i++) {  // Spawn 10 palyers
-        if (side[i] == 0 && tSideCount < 5) { //Assign t side
+        if (side[i] == 0 && tSideCount < 5 || ctSideCount >= 5) { //Assign t side
             spawn(new player(true, true), &worldMapRef[tspawn->y][tspawn->x + tSideCount]);
             tSideCount++;
         }
@@ -48,10 +52,24 @@ world::~world() {
         delete worldMap;
 }
 void world::printMap() const {
+    //int TST = 10;
+    //init_color(TST, 0,500,0);
+    //init_pair(1, COLOR_RED, TST);
+    short r, g, b;
+    //short f, b;
     charMap& worldMapRef = *worldMap;
     for ( int i = 0; i < worldMap->height(); i++ ) {
-        for ( int j = 0; j < worldMap->width(); j++ )
+        for ( int j = 0; j < worldMap->width(); j++ ) {
+            attron(COLOR_PAIR(worldColors.colorPair(worldMapRef[i][j].color())));
+         /*   BLINK Test
+         if (worldMapRef[i][j].ent != NULL)
+                if (worldMapRef[i][j].ent == human)
+                    attrset(COLOR_PAIR(worldColors.colorPair(worldMapRef[i][j].color())) | A_BLINK);
+        */  
             printw("%c", worldMapRef[i][j].model());
+            attrset(A_NORMAL);
+            attroff(COLOR_PAIR(worldColors.colorPair(worldMapRef[i][j].color())));
+        }
         printw("\n");
     }
 }
@@ -203,7 +221,7 @@ void world::printMap() const {
         //printw("%d[%c]->", path->tail(), dir[cur]);
         cur = dest;
      //int cur = dest;
-        while(parent[cur] != -1) {
+    /*    while(parent[cur] != -1) {
            //printw("%d[%c]->", cur, dir[cur]);
             for(int i = 0; i < worldMap->height(); i++) {
                 for (int j = 0; j < worldMap->width(); j++) {
@@ -221,7 +239,7 @@ void world::printMap() const {
                 }
             }
             cur = parent[cur];
-        }
+        }*/
         return *path;
     }
     queue& world::pathFinding(cell* s, cell* d) {
@@ -266,19 +284,23 @@ void world::printMap() const {
             }
     }
     void world::diffuse(entity_t* e) {
-        if (player* p = dynamic_cast<player*>(e)){
-            if(p->curPos->above->ent)
+        if (player* p = dynamic_cast<player*>(e)) {
+            if(p->curPos->above->ent){
                 if(p->curPos->above->ent->whatAmI() == entity_t::Object)
                     static_cast<bomb*>(p->curPos->above->ent)->diffuse(true);
-            else if(p->curPos->below->ent)
+            }
+            else if(p->curPos->below->ent) {
                 if(p->curPos->below->ent->whatAmI() == entity_t::Object)
                     static_cast<bomb*>(p->curPos->below->ent)->diffuse(true);
-            else if(p->curPos->left->ent)
+            }
+            else if(p->curPos->left->ent) {
                 if(p->curPos->left->ent->whatAmI() == entity_t::Object)
                     static_cast<bomb*>(p->curPos->left->ent)->diffuse(true);
-            else if(p->curPos->right->ent)  
+            }
+            else if(p->curPos->right->ent) {
                 if(p->curPos->right->ent->whatAmI() == entity_t::Object)  
                     static_cast<bomb*>(p->curPos->right->ent)->diffuse(true);
+            }
         }     
     }
     void world::update(char usrIn) {
@@ -307,7 +329,6 @@ void world::printMap() const {
                 if ( m_ent[i]->whatAmI() == entity_t::Object ) {
                     if ( bomb* b = dynamic_cast<bomb*>(m_ent[i]) ){
                         if ( b->isPlanted() && b->isDiffused() == false) {
-                           // printw("OI");
                             if (b->countdown(true) == 0)
                                 victory(true);// Victory T 1
                         }
@@ -324,10 +345,9 @@ void world::printMap() const {
                     player* p = static_cast<player*>(m_ent[i]);
                     if (p->isAi()) {
                         int t = p->think(worldMap, theBomb);
-
-                       // if (p->status() == player::Moving || p->status() == player::Get_Bomb) {
                         if (p->status() == player::Get_Bomb ) {
                             path(p);
+
                         } else if (p->status() == player::Planting) {
                             path(p);
                             if (p->moveDest() == p->curPos->pathID) { // Check if at bomb Site
@@ -342,6 +362,11 @@ void world::printMap() const {
                                 if (theBomb)
                                     p->hasBomb = false;
                             }
+
+                        } else if (p->status() == player::Diffusing) {
+                            path(p);
+                            if ( worldMap->neighborDir(p->moveDest(), p->curPos->pathID) != 'n' )
+                                diffuse(m_ent[i]);
                         }
                         //else printw("STATUS: %d", p->status());
                     }
@@ -354,12 +379,10 @@ void world::printMap() const {
         if ( player* p = static_cast<player*>(e) ) {
             if(p->path == NULL) { // check if path already exists
                 p->path = &pathFinding(p->curPos->pathID, p->moveDest());
+            } else if(p->path->tail() == p->moveDest()) { // If path exists, check if same dest
                 if( move(e, p->moveDir(worldMap)) ) //Check if traversable
                     int temp = p->path->dequeue();
-            } else if(p->path->tail() == p->moveDest()) { // Check if same dest
-                if( move(e, p->moveDir(worldMap)) ) //Check if traversable
-                    int temp = p->path->dequeue();
-            } else { 
+            } else { // Delete path when end is reached
                 delete p->path;
                 p->path = NULL;
             }
@@ -534,13 +557,13 @@ void world::printMap() const {
         }
         return false;
     }
-
     bool world::bombPlanted() const {
         if(theBomb != NULL)
             if (theBomb->isPlanted())
                 return true;
         return false;
     }
+
 // Cool little window
 /*
     int height = 10;

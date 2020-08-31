@@ -1,6 +1,7 @@
 #ifndef WORLD_H
 #define WORLD_H
 #include <vector>
+#include "colors.h"
 #include "queue.h"
 #include "collison.h"
 #include "entities.h"
@@ -11,6 +12,7 @@ public:
     enum Direction {
         Up, Right, Down, Left
     };
+
 
     world();
     world(std::string mapName);
@@ -45,6 +47,8 @@ private:
     charMap* worldMap{ NULL };
     player* human{ NULL };
     bool win{ false };
+
+    colors worldColors;
 };
 
 #endif
