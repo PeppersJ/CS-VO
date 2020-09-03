@@ -18,18 +18,21 @@ public:
     enum ObjectType { 
         Player, Object, Bullet, Invalid
     };
+
     entity_t();
     entity_t(const entity_t& objB);
+    virtual ~entity_t();
+    entity_t& operator =(const entity_t& objB);
 
-    virtual int whatAmI() const;
-
+    int whatAmI() const;
     char model() const;
     int speed() const;
     int color() const;
 
     cell* curPos{ NULL };
     int lastDir{ Up };
-    int ID{ -1 };
+  // const int ID{ -1 } 
+    int ID{ -1 }; 
     int dirEntered{ -1 };
 protected:
     char m_model{ ' ' };
@@ -37,8 +40,9 @@ protected:
     int m_type{ Invalid };
     int m_speed{ 0 };
 private:
-    void defineColors();
     friend world;
+
+    void defineColors();
 
     static int entCnt;
 };
@@ -47,10 +51,13 @@ class bomb : public entity_t {
 public:
     bomb();
     bomb(bool planted);
+
     int countdown(bool ticking);
     int diffuse(bool ticking);
+
     bool isPlanted() const;
     bool isDiffused() const;
+
     bool beingGrabed{ false };  //for use with player AI
     bool beingDiffused{ false };
 private:
@@ -68,6 +75,7 @@ public:
     bullet();
     bullet (entity_t e);
     bullet(int d, cell* pos, int dirEntered);
+
     int damage() const;
 private:
     int m_damage{ 25 };
@@ -78,24 +86,28 @@ public:
     enum Status{
         Do_Nothing, Get_Bomb, Moving, Planting, Plant_Fail, Diffusing
     };
+
     player();
     player(bool ai, bool terrorist);
     player(const player& ent);
     player(cell* pos);
+
     bullet* shoot(int dir = -1);
     bool plantBomb(bomb* );
     void takeDamage(int amount);
     void death();
+    int updateStatus(int newStatus);
+    int think(const charMap* wolrd, bomb* bmb);
     char moveDir(const charMap*);
+
     int moveDest() const;
     int status() const;
-    int updateStatus(int newStatus);
     bool isAi() const;
     bool isAlive() const;
     bool isTerrorist() const;
-    int think(const charMap* wolrd, bomb* bmb);
     int health() const;
     int priorStatus() const;
+
     int curStatus{ Do_Nothing };
     bool hasBomb { false };
     queue* path{ NULL }; 
@@ -105,9 +117,9 @@ private:
     bool m_isAi{ true };
     bool m_alive{ true };
     bool m_isTerrorist{ false };
-    int m_moveDest{ -1 };
     int m_diffuseTime{ 5 };
     int m_health{ 100 };
+    int m_moveDest{ -1 };
     int m_priorStatus{ -1 };
 };
 

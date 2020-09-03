@@ -31,12 +31,12 @@ world::world(std::string mapName) {
         }
         else if (ctSideCount < 5){
             spawn(new player(true, false), &worldMapRef[ctspawn->y][ctspawn->x + ctSideCount]);
-           // m_ent[i]->dirEntered = entity_t::Left;
             ctSideCount++;
         }
-      //  printw("CNT: %d", entity_t::entCnt);
-      //  getch();
     }
+//    human = spawn(new player(false, true), worldMap->tSpawn());
+//    tSideCount++;
+//    spawn(new player(true, true), &worldMapRef[tspawn->y][tspawn->x + tSideCount]);
     
     theBomb = static_cast<bomb*>(spawn(new bomb, worldMap->bombSpawn()));
     //m_ent[0] = new spawn(new bomb, worldMap->tSpawn());
@@ -94,22 +94,14 @@ void world::printMap() const {
     }
     entity_t* world::shoot(player* e) {
         bullet* b = e->shoot();
-        if ( e->lastDir == Up ) {
-            move(b, Up, b->speed());
+        if ( e->lastDir == Up && move(b, Up, b->speed()))
             spawn(b, b->curPos);
-        }
-        else if ( e->lastDir == Down ) {
-            move(b, Down, b->speed());
+        else if ( e->lastDir == Down && move(b, Down, b->speed()))
             spawn(b, b->curPos);
-        }
-        else if ( e->lastDir == Left ) {
-            move(b, Left, b->speed());
+        else if ( e->lastDir == Left &&  move(b, Left, b->speed()))
             spawn(b, b->curPos);
-        }
-        else if ( e->lastDir == Right ) {
-            move(b, Right, b->speed());
+        else if ( e->lastDir == Right && move(b, Right, b->speed()))
             spawn(b, b->curPos);
-        }
         e->curPos->ent = e;
     }
 /*    void entityCntReset() {
@@ -130,22 +122,10 @@ void world::printMap() const {
 
         int bound = worldMap->width() * worldMap->height();
         std::vector<int> map(bound, std::numeric_limits<int>::max());  // Every cell on map
-        std::vector<int> traverse(bound, false);
         std::vector<bool> shortest(bound, false);
         std::vector<int> parent(bound, -1);
         std::vector<char> dir(bound, 'n');
         queue* path = new queue(bound);
-
-        for(int i = 0; i < worldMap->height(); i++) {
-            for (int j = 0; j < worldMap->width(); j++) {
-                traverse[(*worldMap)[i][j].pathID] = (*worldMap)[i][j].col();
-             //   if ((*worldMap)[i][j].colType != (*worldMap)[i][j].col()){
-             //       printw("ColType %d Col %d", (*worldMap)[i][j].colType, (*worldMap)[i][j].col() );
-             //   }
-                if((*worldMap)[i][j].pathID == source)
-                    traverse[(*worldMap)[i][j].pathID] = entity_t::No_Collision;
-            }
-        }
 
         map[source] = 0; // distance from self is 0
 
@@ -154,7 +134,7 @@ void world::printMap() const {
         int ndx = 0;
         int min;
         int min_pos;
-        // Find shortest path
+
         for(int i = 0; i < bound; i++) {
             min = std::numeric_limits<int>::max();
             // Find closests cell
@@ -168,17 +148,19 @@ void world::printMap() const {
 
             char dir_temp;
             for (int j = 0; j < bound; j++) {
-                dir_temp = worldMap->neighborDir(ndx, j); /**** May cause problems ****/
+                dir_temp = worldMap->neighborDir(ndx, j);
                 if(dir_temp != 'n' && map[ndx] != std::numeric_limits<int>::max()) {
                     if(map[ndx] + 1 < map[j] && !shortest[j]) {
-                        if( traverse[j] == collison::Player_Pass_Through ) {
+                        if( worldMap->getCell(j).col() == collison::Player_Pass_Through ) {
                             dir[j] = dir_temp;
                             map[j] = map[ndx] + 1;
                             parent[j] = ndx;
                             if (enterDir == 'n')
                                 enterDir = dir_temp;
                         }
-                        else if ( traverse[ndx] == collison::No_Collision ) {
+                          else if ( worldMap->getCell(ndx).col() == collison::No_Collision 
+                            || worldMap->getCell(ndx).col() == collison::Player_Pass_Through 
+                            || worldMap->getCell(ndx).col() == collison::Object_Collison ) {
                             if (enterDir == 'w' || enterDir == 's'){
                                 if (dir_temp == 'w' || dir_temp == 's'){
                                     dir[j] = dir_temp;
@@ -207,39 +189,14 @@ void world::printMap() const {
         }
 
         int cur = dest;
-        //path->enqueue(dest);
+        printw("PATH:");
         while(parent[cur] != -1){
-            //printw("%d[%c]->", cur, dir[cur]);
-            if (cur != dest){
+            if (cur != dest)
                 path->enqueue(cur);
-                //printw("%d[%c]->", path->tail(), dir[cur]);
-                //path->enqueue(cur);
-            }
             cur = parent[cur];
         }
         path->enqueue(source);
-        //printw("%d[%c]->", path->tail(), dir[cur]);
         cur = dest;
-     //int cur = dest;
-    /*    while(parent[cur] != -1) {
-           //printw("%d[%c]->", cur, dir[cur]);
-            for(int i = 0; i < worldMap->height(); i++) {
-                for (int j = 0; j < worldMap->width(); j++) {
-                    if ((*worldMap)[i][j].pathID == cur)
-                        (*worldMap)[i][j].obj = '*';
-
-                    if ((*worldMap)[i][j].pathID == source)
-                        (*worldMap)[i][j].obj = 'S';
-
-                    if ((*worldMap)[i][j].pathID == dest)
-                        (*worldMap)[i][j].obj = 'D';
-
-                    //if ((*worldMap)[i][j].pathID == 1229)     
-                  //      (*worldMap)[i][j].obj = '+';
-                }
-            }
-            cur = parent[cur];
-        }*/
         return *path;
     }
     queue& world::pathFinding(cell* s, cell* d) {
@@ -326,7 +283,7 @@ void world::printMap() const {
         int attempts = 0;
         for ( int i = 0; i < entity_t::entCnt; i++) {
             if ( m_ent[i] != NULL ) {
-                if ( m_ent[i]->whatAmI() == entity_t::Object ) {
+                if ( m_ent[i]->whatAmI() == entity_t::Object ) {    // Can delete
                     if ( bomb* b = dynamic_cast<bomb*>(m_ent[i]) ){
                         if ( b->isPlanted() && b->isDiffused() == false) {
                             if (b->countdown(true) == 0)
@@ -409,17 +366,16 @@ void world::printMap() const {
 
     bool world::move(entity_t* e, int dir) {
         charMap& worldMapRef = *worldMap;
+        //enitity_t* temp = NULL;
            
         int cType = -1;
         cell* colCell = NULL;
-        // Less than 3 because 0 - 3 collion types in enitity_t are allowed movement
         if ( dir == Up && worldMap->inBounds(e->curPos->above)) {
             e->lastDir = Up;
             cType = e->collide(e->curPos->above->col());
             colCell = e->curPos->above;
-            //printw("Col:%d", cType);
-            if(cType < 3 || cType == entity_t::Object_Collison) {            
-               // if ( cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through ) {
+            // Less than 4 because 0 - 4 collion types are valid to collide with
+            if(cType < 4 || cType == entity_t::Object_Collison) {            
                 if ( cType == entity_t::Player_Pass_Through ) {
                     if ( e->dirEntered == -1 ) //  == some invalid value
                         e->dirEntered = dir;
@@ -428,14 +384,13 @@ void world::printMap() const {
                     e->dirEntered = -1;
 
                 if ( e->dirEntered == -1 || cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison ) {
-                    if (cType == entity_t::Object_Collison) {
+                    if (cType == entity_t::Object_Collison && colCell) {
                         if (static_cast<bomb*>(colCell->ent)->isPlanted() == true)
                             return false;
                         else {
                             static_cast<player*>(m_ent[e->ID])->hasBomb = true;
-                            //printw("DELETED");
                             delete m_ent[colCell->ent->ID];
-                            m_ent[colCell->ent->ID] = NULL;
+                            m_ent[colCell->ent->ID] = NULL; //= new entity_t;                            m_ent[colCell->ent->ID] NULL; //= new entity_t;
                             //delete theBomb;
                             theBomb = NULL;
                         }
@@ -451,22 +406,22 @@ void world::printMap() const {
             cType = e->collide(e->curPos->below->col());
             colCell = e->curPos->below;
             //printw("Col:%d", cType);
-            if (cType < 3 || cType == entity_t::Object_Collison) {
-                if ( cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison) {
+            if (cType < 4 || cType == entity_t::Object_Collison) {
+                //if ( cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison) {
+                if ( cType == entity_t::Player_Pass_Through ) {
                     if ( e->dirEntered == -1 ) //  == some invalid value
                         e->dirEntered = dir;
                 }
                 else if ( e->dirEntered == Up || e->dirEntered == Down )
                     e->dirEntered = -1;
                 if ( e->dirEntered == -1 || cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison ) {
-                    if (cType == entity_t::Object_Collison) {
+                    if (cType == entity_t::Object_Collison && colCell) {
                         if (static_cast<bomb*>(colCell->ent)->isPlanted() == true)
                             return false;
                         else {
                             static_cast<player*>(m_ent[e->ID])->hasBomb = true;
-                            //printw("DELETED");
                             delete m_ent[colCell->ent->ID];
-                            m_ent[colCell->ent->ID] = NULL;
+                            m_ent[colCell->ent->ID] = NULL; //= new entity_t;                            m_ent[colCell->ent->ID] NULL; //= new entity_t;
                             //delete theBomb;
                             theBomb = NULL;
                         }
@@ -482,7 +437,7 @@ void world::printMap() const {
             cType = e->collide(e->curPos->left->col());
             colCell = e->curPos->left;
             //printw("Col:%d", cType);
-            if (cType < 3 || cType == entity_t::Object_Collison) {
+            if (cType < 4 || cType == entity_t::Object_Collison) {
                // if ( cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison ) {
                 if ( cType == entity_t::Player_Pass_Through ) {
                     if ( e->dirEntered == -1 ) //  == some invalid value
@@ -491,14 +446,13 @@ void world::printMap() const {
                 else if ( e->dirEntered == Left || e->dirEntered == Right )
                     e->dirEntered = -1;
                 if ( e->dirEntered == -1 || cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison ) {
-                    if (cType == entity_t::Object_Collison) {
+                    if (cType == entity_t::Object_Collison && colCell) {
                         if (static_cast<bomb*>(colCell->ent)->isPlanted() == true)
                             return false;
                         else {
                             static_cast<player*>(m_ent[e->ID])->hasBomb = true;
-                            //printw("DELETED");
                             delete m_ent[colCell->ent->ID];
-                            m_ent[colCell->ent->ID] = NULL;
+                            m_ent[colCell->ent->ID] = NULL; //= new entity_t;                           m_ent[colCell->ent->ID] NULL; //= new entity_t;
                             //delete theBomb;
                             theBomb = NULL;
                         }
@@ -514,22 +468,22 @@ void world::printMap() const {
             cType = e->collide(e->curPos->right->col());
             colCell = e->curPos->right;
             //printw("Col:%d", cType);
-            if(cType < 3 || cType == entity_t::Object_Collison) {
-                if ( cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison) {
+            if(cType < 4 || cType == entity_t::Object_Collison) {
+                //if ( cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison) {
+                if ( cType == entity_t::Player_Pass_Through ) {
                     if ( e->dirEntered == -1 ) //  == some invalid value
                         e->dirEntered = dir;
                 }
                 else if ( e->dirEntered == Left || e->dirEntered == Right )
                     e->dirEntered = -1;
                 if ( e->dirEntered == -1 || cType == entity_t::Player_Pass_Through || cType == entity_t::Bullet_Pass_Through || cType == entity_t::Object_Collison ) {
-                    if (cType == entity_t::Object_Collison) {
+                    if (cType == entity_t::Object_Collison && colCell) {
                         if (static_cast<bomb*>(colCell->ent)->isPlanted() == true)
                             return false;
                         else {
                             static_cast<player*>(m_ent[e->ID])->hasBomb = true;
-                            //printw("DELETED");
                             delete m_ent[colCell->ent->ID];
-                            m_ent[colCell->ent->ID] = NULL;
+                            m_ent[colCell->ent->ID] = NULL; //= new entity_t;
                             //delete theBomb;
                             theBomb = NULL;
                         }
@@ -543,7 +497,7 @@ void world::printMap() const {
         }
         if ( e->whatAmI() == entity_t::Bullet ) {
             //printw("BULLET: %d ", e->ID);
-            if (cType == entity_t::Player_Collison) {
+            if (cType == entity_t::Player_Collison && colCell) {
                 player* colEnt = NULL;
                 colEnt = static_cast<player*>(colCell->ent);
                 colEnt->takeDamage(static_cast<bullet*>(e)->damage());

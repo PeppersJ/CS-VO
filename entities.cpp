@@ -4,13 +4,30 @@
 // ----  ---- //
 entity_t::entity_t() : ID(entCnt++) { }
 entity_t::entity_t(const entity_t& objB) : ID(entCnt++) {
-    colType = objB.colType;
-    curPos = objB.curPos;
-    m_model = objB.model();
-    lastDir = objB.lastDir;
-    m_speed = objB.speed();
-    m_color = objB.color();
+    if (this != &objB) {
+        colType = objB.colType;
+        curPos =  objB.curPos;
+        lastDir = objB.lastDir;
+        m_model = objB.model();
+        m_speed = objB.speed();
+        m_color = objB.color();
+        m_type = whatAmI();
+    }
 }
+entity_t::~entity_t() = default;
+entity_t& entity_t::operator = (const entity_t& objB) {
+    if (this != &objB) {
+        colType = objB.colType;
+        curPos = objB.curPos;
+        lastDir = objB.lastDir;
+        m_model = objB.model();
+        m_speed = objB.speed();
+        m_color = objB.color();
+        m_type = whatAmI();
+    }
+    return *this;
+}
+
 char entity_t::model() const { return m_model; }
 int entity_t::speed() const { return m_speed; }
 int entity_t::whatAmI() const { return m_type; }
@@ -27,14 +44,15 @@ bomb::bomb() {
         m_model = 'B';
         m_speed = 0;
         m_color = colors::Color_Bomb;
-    }
+}
 bomb::bomb(bool p) : m_planted(p) {
         m_type = Object;
         colType = Object_Collison;
         m_model = 'B';
         m_speed = 0;
         m_color = colors::Color_Bomb;
-    }
+}
+
 int bomb::countdown(bool ticking) {
     if (m_planted == true) {
         if (ticking == true && m_time > 0){
@@ -64,22 +82,22 @@ bool bomb::isDiffused() const { return m_diffused; }
 // ----  ---- //
 //   bullet   //
 // ----  ---- //
-bullet::bullet (entity_t e) {
+bullet::bullet (entity_t e){
     m_type = e.whatAmI();
     colType = e.colType;
     m_model = e.model();
-    curPos = e.curPos;
     lastDir = e.lastDir;
     m_speed = e.speed();
+    curPos = e.curPos;
     dirEntered = e.dirEntered;
     m_color = e.color();
 }
 bullet::bullet(int d, cell* pos, int dirEntered) {
     m_type = Bullet;
     colType = Bullet_Collison;
+    curPos = pos;
     lastDir = d;
     m_model = '.';
-    curPos = pos;
     m_speed = 3;
     this->dirEntered = dirEntered;
     m_color = colors::Color_Bullet;
@@ -114,17 +132,19 @@ player::player(bool ai = false, bool t = false) : m_isAi(ai), m_isTerrorist(t) {
         m_color = colors::Color_CT;
 }
 
-player::player(const player& ent){
+player::player(const player& ent) {
     m_type = ent.whatAmI();
     colType = ent.colType;
     m_model = ent.model();
-    curPos = ent.curPos;
-    lastDir = ent.lastDir;
     m_speed = ent.speed();
+    lastDir = ent.lastDir;
+    curPos = ent.curPos;
     dirEntered = ent.dirEntered;
     m_health = ent.health();
     m_alive = ent.isAlive();
-    path = ent.path;
+    m_isAi = isAi();
+    m_isTerrorist = isTerrorist();
+    *path = *ent.path;
     m_color = ent.color();
 }
 player::player(cell* pos) { 
@@ -182,26 +202,27 @@ int player::think(const charMap* world, bomb* bmb) {
             } else { //Bomb isn't dropped
                 if (hasBomb && status() != Planting) { 
                     if (rand() % 2  >= 1) {  // Choose random plant site
-                        int Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
-                        int X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
+                        int Y = rand() % world->siteAHeight() + world->siteA()->y;
+                        int X = rand() % world->siteAWidth() + world->siteA()->x;
                         cell* temp = &(*world)[Y][X];
                         m_moveDest = temp->pathID;
                         while(temp->model() != 'P') {
-                            Y = rand() % (world->siteA()->y + world->siteAHeight()) + world->siteA()->y;
-                            X = rand() % (world->siteA()->x + world->siteAWidth()) + world->siteA()->x;
-                            temp = &(*world)[Y][X];
+                            Y = rand() % world->siteAHeight() + world->siteA()->y;
+                            X = rand() % world->siteAWidth() + world->siteA()->x;
+                            printf("Y:%d X:%d\n", Y, X);
+                            *temp = (*world)[Y][X];
                             m_moveDest = temp->pathID;
                         }
                     }
                     else {                    
-                        int Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
-                        int X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
+                        int Y = rand() % world->siteBHeight() + world->siteB()->y;
+                        int X = rand() % world->siteBWidth() + world->siteB()->x;
                         cell* temp = &(*world)[Y][X];
                         m_moveDest = temp->pathID;
                         while(temp->model() != 'P') {
-                            Y = rand() % (world->siteB()->y + world->siteBHeight()) + world->siteB()->y;
-                            X = rand() % (world->siteB()->x + world->siteBWidth()) + world->siteB()->x;
-                            temp = &(*world)[Y][X];
+                            Y = rand() % world->siteBHeight() + world->siteB()->y;
+                            X = rand() % world->siteBWidth() + world->siteB()->x;
+                            *temp = (*world)[Y][X];
                             m_moveDest = temp->pathID;
                         }
                     }
