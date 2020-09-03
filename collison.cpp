@@ -1,5 +1,5 @@
 #include "collison.h"
-int collison::collide(int colT) {
+int collison::collide(int colT) const {
     if ( colType == No_Collision ) 
         return No_Collision;
 
