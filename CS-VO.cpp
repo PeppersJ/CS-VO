@@ -1,12 +1,7 @@
 // Fix running out of memory space (Crashes on 52 entitiy)
 // Add corpses
 // SegFalt on shooting w/o moving
-// Fix double damge when shooting adjacant
 // Throw error for missing map
-// Fix deuque
-// Fix enquenext
-// Make node subscript operator a const function
-// Possibly assign internal pointer in player function to reference world
 
 //CS:VO created by Rishawn Peppers Johnson
 //Complie as: ./csvo.sh
