@@ -2,11 +2,13 @@
 
 cell::cell(int p = -1) : pathID(p) {}
 cell::cell(const cell& objB) {
-    ent = objB.ent;
-    obj = objB.obj;
-    y = objB.y;
-    x = objB.x;
-    pathID = objB.pathID;
+    if (this != &objB) {
+        ent = objB.ent;
+        obj = objB.obj;
+        y = objB.y;
+        x = objB.x;
+        pathID = objB.pathID;
+    }
 }
 int cell::col() const {
     if (ent == NULL)
@@ -14,6 +16,17 @@ int cell::col() const {
     else 
         return ent->colType;
 }
+cell::~cell() = default;
+cell& cell::operator = (const cell& objB) {
+    if(this != &objB) {
+        ent = objB.ent;
+        obj = objB.obj;
+        y = objB.y;
+        x = objB.x;
+        pathID = objB.pathID;
+    }
+}
+
 int cell::color() const {
     if (ent == NULL)
         return m_color; // Defalut env color
@@ -110,13 +123,13 @@ charMap::charMap(std::string fileName) {
         }
         for (int i = 0; i < m_height; i++)
             for (int j = 0; j < m_width; j++) {
-                if ( j > 0 )
+                if ( j > 0 )    // Left Bounds
                     map[i][j].left = &map[i][j - 1];
-                if ( j < m_width )
+                if ( j < m_width - 1 )  // Right Bounds
                     map[i][j].right = &map[i][j + 1];
-                if ( i > 0 )
+                if ( i > 0 )    // Top Bounds
                     map[i][j].above = &map[i - 1][j];
-                if ( i < m_height )
+                if ( i < m_height - 1 ) // Bottom Bounds
                     map[i][j].below = &map[i + 1][j];
 
                 // Determine size of plant region
@@ -167,7 +180,8 @@ int charMap::siteBHeight() const { return m_siteB_height; }
 cell* charMap::bombSpawn() const { return m_bombSpawn; }
 int charMap::width() const { return m_width; }
 int charMap::height() const { return m_height; }
-
-cell*& charMap::operator [](int i) const {
-    return map[i];
+cell*& charMap::operator [](int i) const { return map[i]; }
+cell& charMap::getCell(int cellID) const {
+    //printf("%s\n", );
+    return map[ int(cellID / m_width) ][ cellID % m_width ];
 }

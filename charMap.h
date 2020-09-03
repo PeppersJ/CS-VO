@@ -10,7 +10,9 @@ class charMap;
 struct cell : public collison {
     cell(int p);
     cell(const cell& objB);
+    ~cell();
 
+    cell& operator = (const cell& objB);
     int col() const;
     int color() const;
     char model() const;
@@ -52,6 +54,8 @@ public:
     int siteBWidth() const;
     int siteBHeight() const;
     cell*& operator [](int i) const;
+    cell& getCell(int cellID) const;
+
     cell** map{ NULL };
 
 private:
